@@ -72,9 +72,6 @@ jobs:
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
-          git remote add google-bbr https://github.com/google/bbr.git
-          git fetch google-bbr v3
-          git merge google-bbr/v3 --allow-unrelated-histories -m "Merge BBR v3 into kernel"
           git clone --depth=1 https://github.com/xx2901318208/android_kernel_common_oppo_sm8650 -b oppo/sm8650_v_15.0.0_find_x7_ultra common
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
