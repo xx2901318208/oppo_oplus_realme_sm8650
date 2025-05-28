@@ -10,8 +10,8 @@ echo "===== 欧加真SM8650通用A15 OKI内核本地编译脚本 By Coolapk@cctv
 echo ">>> 读取用户配置..."
 SOC_BRANCH=${SOC_BRANCH:-sm8650}
 MANIFEST=${MANIFEST:-oppo+oplus+realme}
-read -p "请输入自定义内核后缀（默认：android14-11-o-gca13bffobf09）: " CUSTOM_SUFFIX
-CUSTOM_SUFFIX=${CUSTOM_SUFFIX:-android14-11-o-gca13bffobf09}
+read -p "请输入自定义内核后缀（默认：android14-11-o-gc88ee742fca6）: " CUSTOM_SUFFIX
+CUSTOM_SUFFIX=${CUSTOM_SUFFIX:-android14-11-o-gc88ee742fca6}
 USE_PATCH_LINUX=${USE_PATCH_LINUX:-y}
 read -p "是否应用 lz4kd 补丁？(y/n，默认：y): " APPLY_LZ4KD
 APPLY_LZ4KD=${APPLY_LZ4KD:-y}
@@ -46,7 +46,7 @@ echo ">>> 初始化仓库..."
 rm -rf kernel_workspace
 mkdir kernel_workspace
 cd kernel_workspace
-git clone --depth=1 https://github.com/cctv18/android_kernel_common_oneplus_sm8650 -b oneplus/sm8650_v_15.0.0_oneplus12 common
+git clone --depth=1 https://github.com/oppo-source/android_kernel_common_oppo_sm8650 -b oppo/sm8650_v_15.0.0_find_x7_ultra common
 echo ">>> 初始化仓库完成"
 
 # ===== 清除 abi 文件、去除 -dirty 后缀 =====
