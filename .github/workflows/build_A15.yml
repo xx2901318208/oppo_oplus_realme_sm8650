@@ -81,7 +81,7 @@ jobs:
           done
       - name: Merge BBR v3 into Kernel Source
         run: |
-          cd kernel_workspace
+          cd kernel_workspace/common
           git remote add google-bbr https://github.com/google/bbr.git
           git fetch google-bbr v3
           git merge google-bbr/v3 --allow-unrelated-histories -m "Merge BBR v3 into kernel"
