@@ -75,7 +75,15 @@ jobs:
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
-
+      - name: Merge BBR v3 into Kernel Source
+        run: |
+          cd kernel_workspace/kernel_platform
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git remote add google-bbr https://github.com/google/bbr.git 
+          git fetch google-bbr v3
+          git merge google-bbr/v3 --allow-unrelated-histories -m "Merge BBR v3 into kernel"
+          
       - name: 添加 SukiSU-Ultra
         id: ksu_version
         run: |
@@ -143,6 +151,8 @@ jobs:
           echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SCHED_CLASS_EXT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SCHED_DEBUG=y" >> ./common/arch/arm64/configs/gki_defconfig
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
             echo "CONFIG_ZSMALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -172,7 +182,13 @@ jobs:
               sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
             done
           fi
-           
+      - name: Force ECN + Reduce overhead
+        run: |
+          cd kernel_workspace/kernel_platform/common/net/ipv4
+          sed -i 's/net->ipv4.sysctl_tcp_ecn = 2;/net->ipv4.sysctl_tcp_ecn = 1;/' tcp_ipv4.c
+          sed -i '/\.procname[[:space:]]*=[[:space:]]*"tcp_ecn"/, /^[[:space:]]*\}/ s/SYSCTL_TWO/SYSCTL_ONE/' sysctl_net_ipv4.c
+          sed -i 's/net->ipv4.sysctl_tcp_pacing_ss_ratio = 200;/net->ipv4.sysctl_tcp_pacing_ss_ratio = 160;/' tcp_ipv4.c
+          sed -i 's/net->ipv4.sysctl_tcp_pacing_ca_ratio = 120;/net->ipv4.sysctl_tcp_pacing_ca_ratio = 110;/' tcp_ipv4.c
       - name: 构建内核
         run: |
           cd kernel_workspace
