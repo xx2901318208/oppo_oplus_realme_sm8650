@@ -68,9 +68,9 @@ jobs:
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
-          git clone --depth 1 https://github.com/oppo-source/android_kernel_modules_and_devicetree_oppo_sm8650 -b oppo/sm8650_v_15.0.0_find_x7_ultra vendor
+          git clone --depth 1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-vendor-source.git vendor
           mv vendor/* ..
-          git clone --depth=1 https://github.com/oppo-source/android_kernel_oppo_sm8650 -b oppo/sm8650_v_15.0.0_find_x7_ultra common
+          git clone --depth=1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-common-source.git common
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
