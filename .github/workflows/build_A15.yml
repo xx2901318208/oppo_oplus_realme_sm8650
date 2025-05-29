@@ -199,7 +199,7 @@ jobs:
             done
           fi
            
-      - name: 构建内核
+      - name: 构建风驰内核驱动
         run: |
           cd kernel_workspace
           if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
@@ -212,10 +212,10 @@ jobs:
           make -j$(nproc --all) LLVM=-20 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang LD=ld.lld HOSTCC=clang HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
           echo "内核编译完成！"
          
-      - name: 应用patch_linux并修补内核
+      - name: 应用patch_linux（kpm）并修补内核
         run: |
           cd kernel_workspace/common/out/arch/arm64/boot
-          curl -LO https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
+          wget https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
           chmod +x patch_linux
           ./patch_linux
           rm -f Image
