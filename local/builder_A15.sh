@@ -46,7 +46,9 @@ echo ">>> 初始化仓库..."
 rm -rf kernel_workspace
 mkdir kernel_workspace
 cd kernel_workspace
-git clone --depth=1 https://github.com/oppo-source/android_kernel_common_oppo_sm8650 -b oppo/sm8650_v_15.0.0_find_x7_ultra common
+git clone --depth 1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-vendor-source.git vendor
+mv vendor/* ..
+git clone --depth=1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-common-source.git common
 echo ">>> 初始化仓库完成"
 
 # ===== 清除 abi 文件、去除 -dirty 后缀 =====
@@ -90,7 +92,10 @@ cp ../SukiSU_patch/69_hide_stuff.patch ./
 patch -p1 -F 3 < 69_hide_stuff.patch
 patch -p1 < new_hooks.patch
 cd ../
-
+# 仅在启用了 KPM 时添加 KPM 支持
+if [[ "$USE_PATCH_LINUX" == "y" || "$USE_PATCH_LINUX" == "Y" ]]; then
+  echo "CONFIG_KPM=y" >> "$DEFCONFIG_FILE"
+fi
 # ===== 选择应用 LZ4KD 补丁 =====
 if [[ "$APPLY_LZ4KD" == "y" || "$APPLY_LZ4KD" == "Y" ]]; then
   echo ">>> 应用 LZ4KD 补丁..."
