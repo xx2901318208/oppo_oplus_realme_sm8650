@@ -104,8 +104,7 @@ jobs:
           cp ./SukiSU_patch/hooks/new_hooks.patch ./common/
           cd ./common
           patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
-          patch -p1 < new_hooks.patch
-
+          
       - name: 应用 Hide Stuff 修补程序
         run: |
           cd kernel_workspace/common
