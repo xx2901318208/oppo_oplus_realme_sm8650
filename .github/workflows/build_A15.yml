@@ -68,9 +68,9 @@ jobs:
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
-          git clone --depth 1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-vendor-source.git vendor
+          git clone --depth 1 https://github.com/oppo-source/android_kernel_common_oppo_sm8650.git vendor
           mv vendor/* ..
-          git clone --depth=1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-common-source.git common
+          git clone --depth=1 https://github.com/oppo-source/android_kernel_common_oppo_sm8650.git common
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
@@ -290,7 +290,7 @@ jobs:
             ### 📱 欧加真 Android 15 SukiSU-Ultra SM8650 通用内核 | 构建信息
             - 内核版本号: ${{ env.FULL_VERSION }}
             - 编译时间: ${{ env.TIME_FORM }}
-            - 机型：欧加真骁龙8Gen3 6.1 Android 15内核通用（基于一加12 Android 15 版官方OKI源码）
+            - 机型：欧加真骁龙8Gen3 6.1 Android 15内核通用（基于OPPO FindX7U Android 15 版官方OKI源码）
             - 特性：SukiSU Ultra + SUSFS + VFS + KPM
             - LZ4K支持：${{ github.event.inputs.lz4k_enable }}
             - 风驰内核支持：${{ github.event.inputs.scx_enable }}
