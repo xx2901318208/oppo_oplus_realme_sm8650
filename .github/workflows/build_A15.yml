@@ -77,8 +77,10 @@ jobs:
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
-          git config --global user.name "xx2901318208"
-          git config --global user.email "2901318208@qq.com"
+          git config user.name "xx2901318208"
+          git config user.email "2901318208@qq.com"
+          git add scripts/setlocalversion
+          git commit -m "Remove -dirty suffix from setlocalversion"
       - name: Merge BBR v3 into Kernel Source
         run: |
           cd kernel_workspace/common
