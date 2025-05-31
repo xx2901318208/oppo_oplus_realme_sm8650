@@ -37,7 +37,7 @@ on:
         required: false
         type: string
         default: 'android14-11-o-gc88ee742fca6'
-
+      
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -54,7 +54,12 @@ jobs:
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
-
+          
+      - name: Configure Git
+        run: |
+         git config --global user.name "xx2901318208"
+         git config --global user.email "2901318208@qq.com"
+         
       - name: 安装配置环境依赖
         run: |
           sudo apt update && sudo apt upgrade -y
@@ -71,6 +76,7 @@ jobs:
           git clone --depth 1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-vendor-source.git vendor
           mv vendor/* ..
           git clone --depth=1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-common-source.git common
+          cd kernel_workspace/common
           git remote add google-bbr https://github.com/google/bbr.git
           git fetch google-bbr v3
           git merge google-bbr/v3 --allow-unrelated-histories -m "Merge BBR v3 into kernel"
