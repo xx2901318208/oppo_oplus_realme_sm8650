@@ -76,9 +76,6 @@ jobs:
           git clone --depth 1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-vendor-source.git vendor
           mv vendor/* ..
           git clone --depth=1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-common-source.git common
-          git remote add google-bbr https://github.com/google/bbr.git common
-          git fetch google-bbr v3
-          git merge google-bbr/v3 --allow-unrelated-histories -m "Merge BBR v3 into kernel"
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
