@@ -78,6 +78,15 @@ jobs:
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
 
+
+      - name: Merge BBR v3 into Kernel Source
+        run: |
+          cd kernel_workspace/kernel_platform
+          git remote add google-bbr https://github.com/google/bbr.git
+          git fetch google-bbr v3
+          git merge google-bbr/v3 --allow-unrelated-histories -m "Merge BBR v3 into kernel"
+
+
       - name: 添加 SukiSU-Ultra
         id: ksu_version
         run: |
