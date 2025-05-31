@@ -249,8 +249,6 @@ jobs:
           ./patch_linux
           rm -f Image
           mv oImage Image
-          cp Image $GITHUB_WORKSPACE/AnyKernel3/Image
-          cp Image $GITHUB_WORKSPACE/kernel_workspace/kernel
           
       - name: 克隆 AnyKernel3 并打包
         run: |
