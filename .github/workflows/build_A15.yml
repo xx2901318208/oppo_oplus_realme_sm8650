@@ -63,7 +63,8 @@ jobs:
           sudo wget https://apt.llvm.org/llvm.sh
           sudo chmod +x llvm.sh
           sudo sudo ./llvm.sh 20 all
-
+          git config user.name "xx2901318208"
+          git config user.email "2901318208@qq.com"      
       - name: 初始化源码仓库
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
@@ -71,22 +72,16 @@ jobs:
           git clone --depth 1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-vendor-source.git vendor
           mv vendor/* ..
           git clone --depth=1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-common-source.git common
+          git remote add google-bbr https://github.com/google/bbr.git
+          git fetch google-bbr v3
+          git merge google-bbr/v3 --allow-unrelated-histories -m "Merge BBR v3 into kernel"
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
-          git config user.name "xx2901318208"
-          git config user.email "2901318208@qq.com"
-          git add scripts/setlocalversion
-          git commit -m "Remove -dirty suffix from setlocalversion"
-      - name: Merge BBR v3 into Kernel Source
-        run: |
-          cd kernel_workspace/common
-          git remote add google-bbr https://github.com/google/bbr.git
-          git fetch google-bbr v3
-          git merge google-bbr/v3 --allow-unrelated-histories -m "Merge BBR v3 into kernel"
+          
 
       - name: 添加 SukiSU-Ultra
         id: ksu_version
