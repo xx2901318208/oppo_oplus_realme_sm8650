@@ -119,9 +119,9 @@ jobs:
           patch -p1 < new_hooks.patch
           
           curl -LSs --remote-name "https://raw.githubusercontent.com/xx2901318208/kernel_manifest/refs/heads/realme/sm8650/patches/0001-lz4-v1.10.0.patch"
-          patch -p1 < 001-lz4.patch || true
+          patch -p1 < 0001-lz4-v1.10.0.patch || true
           curl -LSs --remote-name "https://raw.githubusercontent.com/xx2901318208/kernel_manifest/refs/heads/realme/sm8650/patches/0001-zstd-v1.5.7.patch"
-          patch -p1 < 002-zstd.patch || true
+          patch -p1 < 0001-zstd-v1.5.7.patch || true
           cd ..
           
       - name: 应用 lz4k 补丁
