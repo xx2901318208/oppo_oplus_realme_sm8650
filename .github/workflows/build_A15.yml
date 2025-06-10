@@ -64,6 +64,72 @@ jobs:
         run: |
           sudo apt update && sudo apt upgrade -y
           sudo apt-get install curl bison flex make binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev -y
+name: 欧加真 Android 15 通用OKI内核
+
+env:
+  TZ: Asia/Shanghai
+  CPU: 'sm8650'
+  FEIL: 'oppo+oplus+realme'
+  ANDROID_VERSION: 'android14'
+  KERNEL_VERSION: '6.1'
+  KERNEL_NAME: 'android14-11-o-gc88ee742fca6'
+  KERNELSU_VARIANT: 'SukiSU-Ultra'
+  KERNELSU_BRANCH: 'susfs-dev'
+
+on:
+  workflow_dispatch:
+  # 取消此处注释代码可开启每日定时编译
+#  schedule:
+#    - cron: '0 23 * * *'  # UTC时间23点（北京时间次日7点）
+    inputs:
+      lz4k_enable:
+        description: '是否安装 LZ4K 补丁'
+        required: true
+        type: choice
+        default: 'true'
+        options:
+          - 'true'
+          - 'false'
+      scx_enable:
+        description: '是否安装风驰内核驱动'
+        required: true
+        type: choice
+        default: 'true'
+        options:
+          - 'true'
+          - 'false'
+      kernel_suffix:
+        description: '内核后缀(留空默认,开头别加连字符)'
+        required: false
+        type: string
+        default: 'android14-11-o-gc88ee742fca6'
+      
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      ksuver: ${{ steps.ksu_version.outputs.ksuver }}
+    steps:
+      - name: 最大化建筑空间
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 8192
+          temp-reserve-mb: 2048
+          swap-size-mb: 8192
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          
+      - name: Configure Git
+        run: |
+         git config --global user.name "xx2901318208"
+         git config --global user.email "2901318208@qq.com"
+         
+      - name: 安装配置环境依赖
+        run: |
+          sudo apt update && sudo apt upgrade -y
+          sudo apt-get install curl bison flex make binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev -y
           sudo rm -rf ./llvm.sh
           sudo wget https://apt.llvm.org/llvm.sh
           sudo chmod +x llvm.sh
@@ -73,16 +139,44 @@ jobs:
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
-          git clone --depth 1 --branch scx https://github.com/ferstar/realme_GT5pro-AndroidV-vendor-source.git vendor
-          mv vendor/* ..
-          git clone --depth=1 --branch scx https://github.com/ferstar/realme_GT5pro-AndroidV-common-source.git common
-
+          if [ -d "vendor" ]; then
+          cd vendor
+          git reset --hard HEAD
+          git clean -fdx
+          git fetch origin
+          git checkout $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "master") || git checkout -b $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "master") origin/$([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "master")
+          git pull
+          cd ..
+          else
+          git clone --branch $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "master") https://github.com/ferstar/realme_GT5pro-AndroidV-vendor-source.git vendor
+          fi
+    
+          for dir in vendor/*; do
+          if [ -d "../$dir" ]; then
+          echo ">>> 清理旧的 $dir 目录..."
+          rm -rf "../$dir"
+          fi
+          done
+          cp -rf vendor/* ..
+    
+          echo ">>> 克隆/更新 common 仓库..."
+          if [ -d "common" ]; then
+          cd common
+          git reset --hard HEAD
+          git clean -fdx
+          git fetch origin
+          git checkout $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "dev") || git checkout -b $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "dev") origin/$([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "dev")
+          git pull
+          cd ..
+          else
+          git clone --depth 1 --branch $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "dev") https://github.com/ferstar/realme_GT5pro-AndroidV-common-source.git common
+          fi
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
-          done
+          done 
       - name: 添加 SukiSU-Ultra
         id: ksu_version
         run: |
