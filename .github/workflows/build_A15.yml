@@ -73,17 +73,44 @@ jobs:
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
-          git clone --depth 1 --branch scx https://github.com/ferstar/realme_GT5pro-AndroidV-vendor-source.git vendor
-          mv vendor/* ..
-          git clone --depth=1 --branch scx https://github.com/ferstar/realme_GT5pro-AndroidV-common-source.git common
+          if [ -d "vendor" ]; then
+          cd vendor
+          git reset --hard HEAD
+          git clean -fdx
+          git fetch origin
+          git checkout $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "master") || git checkout -b $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "master") origin/$([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "master")
+          git pull
+          cd ..
+          else
+          git clone --branch $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "master") https://github.com/ferstar/realme_GT5pro-AndroidV-vendor-source.git vendor
+          fi
+    
+          for dir in vendor/*; do
+          if [ -d "../$dir" ]; then
+          echo ">>> 清理旧的 $dir 目录..."
+          rm -rf "../$dir"
+          fi
+          done
+          cp -rf vendor/* ..
+    
+          echo ">>> 克隆/更新 common 仓库..."
+          if [ -d "common" ]; then
+          cd common
+          git reset --hard HEAD
+          git clean -fdx
+          git fetch origin
+          git checkout $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "dev") || git checkout -b $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "dev") origin/$([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "dev")
+          git pull
+          cd ..
+          else
+          git clone --depth 1 --branch $([[ "$APPLY_SCX" =~ ^[Yy]$ ]] && echo "scx" || echo "dev") https://github.com/ferstar/realme_GT5pro-AndroidV-common-source.git common
+          fi
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
-          done
-          
-
+          done 
       - name: 添加 SukiSU-Ultra
         id: ksu_version
         run: |
