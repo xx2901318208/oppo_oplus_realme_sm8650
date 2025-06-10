@@ -34,7 +34,7 @@ on:
           - 'false'
       kernel_suffix:
         description: '内核后缀(留空默认,开头别加连字符)'
-        required: false
+        required: true
         type: string
         default: 'android14-11-o-gc88ee742fca6'
       
