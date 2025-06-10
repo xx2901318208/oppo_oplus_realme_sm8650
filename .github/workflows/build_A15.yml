@@ -197,7 +197,7 @@ jobs:
            echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
            fi
       - name: Force ECN + Reduce overhead
-        if: ${{ inputs.kernel_version == '6.1' || inputs.kernel_version == '6.1' }}
+        if: ${{ env.KERNEL_VERSION == '6.1' }}
         run: |
           cd "$CONFIG/kernel_platform/common/net/ipv4"
           sed -i 's/net->ipv4.sysctl_tcp_ecn = 2;/net->ipv4.sysctl_tcp_ecn = 1;/' tcp_ipv4.c
@@ -230,7 +230,7 @@ jobs:
       - name: 构建风驰内核驱动
         run: |
           cd kernel_workspace
-          if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
+          if [[ "${{ github.event.inputs.scx_enable }}" == "true" ]]; then
             cp -r ./sched_ext/* ./common/kernel/sched
           fi
           cd common
