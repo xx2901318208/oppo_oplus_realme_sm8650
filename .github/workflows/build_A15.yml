@@ -78,11 +78,10 @@ jobs:
           git reset --hard HEAD
           git clean -fdx
           git fetch origin
-          git checkout $([[ "$scx_enable" =~ ^[true]$ ]] && echo "scx" || echo "master") || git checkout -b $([[ "$scx_enable" =~ ^[true]$ ]] && echo "scx" || echo "master") origin/$([[ "$scx_enable" =~ ^[true]$ ]] && echo "scx" || echo "master")
           git pull
           cd ..
           else
-          git clone --branch $([[ "$scx_enable" =~ ^[true]$ ]] && echo "scx" || echo "master") https://github.com/ferstar/realme_GT5pro-AndroidV-vendor-source.git vendor
+          git clone --branch scx https://github.com/ferstar/realme_GT5pro-AndroidV-vendor-source.git vendor
           fi
     
           for dir in vendor/*; do
@@ -99,11 +98,10 @@ jobs:
           git reset --hard HEAD
           git clean -fdx
           git fetch origin
-          git checkout $([[ "$scx_enable" =~ ^[true]$ ]] && echo "scx" || echo "dev") || git checkout -b $([[ "$scx_enable" =~ ^[true]$ ]] && echo "scx" || echo "dev") origin/$([[ "$scx_enable" =~ ^[true]$ ]] && echo "scx" || echo "dev")
           git pull
           cd ..
           else
-          git clone --depth 1 --branch $([[ "$scx_enable" =~ ^[true]$ ]] && echo "scx" || echo "dev") https://github.com/ferstar/realme_GT5pro-AndroidV-common-source.git common
+          git clone --depth 1 --branch scx https://github.com/ferstar/realme_GT5pro-AndroidV-common-source.git common
           fi
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
