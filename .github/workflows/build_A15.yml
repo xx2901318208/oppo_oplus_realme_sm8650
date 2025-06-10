@@ -134,9 +134,9 @@ jobs:
             cp ../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4kd.patch ./
             patch -p1 -F 3 < lz4kd.patch || true
           fi
-          if [[ "$USE_PATCH_LINUX" == "y" || "$USE_PATCH_LINUX" == "Y" ]]; then
-           echo "CONFIG_KPM=y" >> "$DEFCONFIG_FILE"
-          fi
+           if [[ "$USE_PATCH_LINUX" == "y" || "$USE_PATCH_LINUX" == "Y" ]]; then
+            echo "CONFIG_KPM=y" >> "$DEFCONFIG_FILE"
+           fi
       - name: 添加 SUSFS 配置设置
         run: |
            cd kernel_workspace
@@ -210,7 +210,7 @@ jobs:
           #ls -t | grep -E 'tcp_|sysctl_'
           
           #禁用 defconfig 检查
-          sed -i 's/check_defconfig//' ./common/build.config.gki
+          #sed -i 's/check_defconfig//' ./common/build.config.gki
 
       - name: 添加制作名称
         run: |
