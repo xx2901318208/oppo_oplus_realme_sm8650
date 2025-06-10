@@ -227,8 +227,15 @@ jobs:
               sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
             done
           fi
-           
-
+      - name: 构建风驰内核驱动
+        run: |
+          cd kernel_workspace
+          if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
+            cp -r ./sched_ext/* ./common/kernel/sched
+          fi
+          cd common
+          make -j$(nproc --all) LLVM=-20 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang LD=ld.lld HOSTCC=clang HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
+          echo "内核编译完成！"
          
       - name: Apply KPM configs
         run: |
