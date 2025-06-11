@@ -199,8 +199,7 @@ jobs:
            fi
       - name: Add TTL Target Support
         run: |
-          echo "Changing to configuration directory: $CONFIG..."
-          cd "$CONFIG/kernel_platform"
+          cd kernel_workspace
           
           echo "Adding configuration settings to gki_defconfig..."
           echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
