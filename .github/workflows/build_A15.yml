@@ -73,9 +73,9 @@ jobs:
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
-          git clone --depth 1 -b scx https://github.com/ferstar/realme_GT5pro-AndroidV-vendor-source.git vendor
+          git clone --depth 1 -b master https://github.com/ferstar/realme_GT5pro-AndroidV-vendor-source.git vendor
           mv vendor/* ..
-          git clone --depth=1 -b scx https://github.com/ferstar/realme_GT5pro-AndroidV-common-source.git common
+          git clone --depth=1 -b master https://github.com/ferstar/realme_GT5pro-AndroidV-common-source.git common
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
