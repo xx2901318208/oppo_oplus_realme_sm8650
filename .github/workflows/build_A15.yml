@@ -134,78 +134,72 @@ jobs:
             cp ../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4kd.patch ./
             patch -p1 -F 3 < lz4kd.patch || true
           fi
-           if [[ "$USE_PATCH_LINUX" == "y" || "$USE_PATCH_LINUX" == "Y" ]]; then
-            echo "CONFIG_KPM=y" >> "$DEFCONFIG_FILE"
-           fi
+          # Removed the conditional CONFIG_KPM=y as it's set unconditionally in the next step.
       - name: 添加 SUSFS 配置设置
         run: |
            cd kernel_workspace
-           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=n" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
+           DEFCONFIG_FILE="./common/arch/arm64/configs/gki_defconfig"
+
+           # Helper function to set config, ensuring no duplicates and correct value
+           set_config() {
+             local config_name=$1
+             local config_value=$2
+             # Delete existing line for the config
+             sed -i "/^${config_name}=/d" "$DEFCONFIG_FILE"
+             # Add the new config line
+             echo "${config_name}=${config_value}" >> "$DEFCONFIG_FILE"
+           }
+
+           set_config "CONFIG_KSU" "y"
+           set_config "CONFIG_KPM" "y"
+           set_config "CONFIG_KSU_SUSFS_SUS_SU" "n"
+           set_config "CONFIG_KSU_MANUAL_HOOK" "y"
+           set_config "CONFIG_KSU_SUSFS" "y"
+           set_config "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT" "y"
+           set_config "CONFIG_KSU_SUSFS_SUS_PATH" "y"
+           set_config "CONFIG_KSU_SUSFS_SUS_MOUNT" "y"
+           set_config "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT" "y"
+           set_config "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT" "y"
+           set_config "CONFIG_KSU_SUSFS_SUS_KSTAT" "y"
+           set_config "CONFIG_KSU_SUSFS_SUS_OVERLAYFS" "n"
+           set_config "CONFIG_KSU_SUSFS_TRY_UMOUNT" "y"
+           set_config "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT" "y"
+           set_config "CONFIG_KSU_SUSFS_SPOOF_UNAME" "y"
+           set_config "CONFIG_KSU_SUSFS_ENABLE_LOG" "y"
+           set_config "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS" "y"
+           set_config "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG" "y"
+           set_config "CONFIG_KSU_SUSFS_OPEN_REDIRECT" "y"
+
+           # Add tethering config settings (moved out of lz4k_enable block and using set_config)
+           set_config "CONFIG_IP_NF_TARGET_TTL" "y"
+           set_config "CONFIG_IP6_NF_TARGET_HL" "y"
+           set_config "CONFIG_IP6_NF_MATCH_HL" "y"
+           
+           # Add personal config setting (moved out of lz4k_enable block and using set_config)
+           set_config "CONFIG_IP_NF_TARGET_ECN" "y"
+
            if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
-           echo "CONFIG_ZSMALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
-           # 以下配置未核实必要性，待测试
-           #echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
-           #sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
-           #sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' ./common/arch/arm64/configs/gki_defconfig
-           # Add tmpfs config setting
-           echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          
-           # Add tethering config setting
-           echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          
-           # Add bbr and fq config setting
-           echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
-           #echo "CONFIG_DEFAULT_CUBIC=y" >> ./common/arch/arm64/configs/gki_defconfig
-           #echo "CONFIG_DEFAULT_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
-           #echo 'CONFIG_DEFAULT_TCP_CONG="bbr"' >> ./common/arch/arm64/configs/gki_defconfig
-           #echo "CONFIG_NET_SCH_DEFAULT=y" >> ./common/arch/arm64/configs/gki_defconfig
-           #echo "CONFIG_DEFAULT_FQ=y" >> ./common/arch/arm64/configs/gki_defconfig
-           #echo 'CONFIG_DEFAULT_NET_SCH="fq"' >> ./common/arch/arm64/configs/gki_defconfig
-           #echo "CONFIG_NET_SCH_HTB=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_TCP_CONG_BIC=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_TCP_CONG_WESTWOOD=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_TCP_CONG_HTCP=y" >> ./common/arch/arm64/configs/gki_defconfig
-           # Add rcu config setting
-           echo "CONFIG_RCU_TRACE=n" >> ./common/arch/arm64/configs/gki_defconfig
-         
-           # Add personal config setting
-           echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
+             set_config "CONFIG_ZSMALLOC" "y"
+             set_config "CONFIG_CRYPTO_LZ4HC" "y"
+             set_config "CONFIG_CRYPTO_LZ4K" "y"
+             set_config "CONFIG_CRYPTO_LZ4KD" "y"
+             set_config "CONFIG_CRYPTO_842" "y"
+             
+             # Add tmpfs config setting
+             set_config "CONFIG_TMPFS_XATTR" "y"
+             set_config "CONFIG_TMPFS_POSIX_ACL" "y"
+            
+             # Add bbr and fq config setting
+             set_config "CONFIG_TCP_CONG_ADVANCED" "y"
+             set_config "CONFIG_TCP_CONG_BBR" "y"
+             set_config "CONFIG_TCP_CONG_BIC" "y"
+             set_config "CONFIG_TCP_CONG_WESTWOOD" "y"
+             set_config "CONFIG_TCP_CONG_HTCP" "y"
+             
+             # Add rcu config setting
+             set_config "CONFIG_RCU_TRACE" "n"
            fi
-      - name: Add TTL Target Support
-        run: |
-          cd kernel_workspace
-          
-          echo "Adding configuration settings to gki_defconfig..."
-          echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          
+      # Removed the "Add TTL Target Support" step as its functionality is now integrated above.
       - name: Force ECN + Reduce overhead
         if: ${{ inputs.kernel_version == '6.6' || inputs.kernel_version == '6.1' }}
         run: |
@@ -243,7 +237,7 @@ jobs:
           export KBUILD_BUILD_TIMESTAMP="${{ github.event.inputs.KERNEL_TIME }}"
           export PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin:$PATH"
           export PATH="/usr/lib/ccache:$PATH"
-          sudo apt install libelf-dev
+          # Removed redundant 'sudo apt install libelf-dev' as it's installed in '安装配置环境依赖' step
           cd kernel_workspace/common
           make -j$(nproc --all) LLVM=-20 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang LD=ld.lld HOSTCC=clang HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
           echo "内核编译完成！"
@@ -323,6 +317,7 @@ jobs:
           tag_name: "${{ env.TAG_HEAD }}-${{ env.TIME }}"
           name: "${{ env.TAG_HEAD }}-${{ env.FULL_VERSION }}"
           body: |
+            ### 📱 欧加真 Android 15 SukiSU-Ultra SM8650 通用内核 | 构建信息
             ### 📱 欧加真 Android 15 SukiSU-Ultra SM8650 通用内核 | 构建信息
             - 内核版本号: ${{ env.FULL_VERSION }}
             - 编译时间: ${{ env.TIME_FORM }}
