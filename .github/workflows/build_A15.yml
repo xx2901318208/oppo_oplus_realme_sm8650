@@ -197,7 +197,7 @@ jobs:
            echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
            fi
       - name: Force ECN + Reduce overhead
-        if: ${{ inputs.kernel_version == '6.6' || inputs.kernel_version == '6.1' }}
+        if: ${{ KERNEL_VERSION == '6.6' || KERNEL_VERSION == '6.1' }}
         run: |
           cd "$CONFIG/kernel_platform/common/net/ipv4"
           sed -i 's/net->ipv4.sysctl_tcp_ecn = 2;/net->ipv4.sysctl_tcp_ecn = 1;/' tcp_ipv4.c
