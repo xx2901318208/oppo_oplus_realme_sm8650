@@ -1,88 +1,70 @@
-name: Build SukiSu Ultra For Realme GT5 Pro
-on:
-  workflow_dispatch:
-    inputs:
-      CPU:
-        description: "处理器分支"
-        required: true
-        default: 'sm8650'
-      MANIFEST:
-        description: "配置文件"
-        required: true
-        default: 'gt5pro'
-      CPUD:
-        description: "处理器代号"
-        required: true
-        default: 'pineapple'
-      ANDROID_VERSION:
-        description: "内核安卓版本"
-        required: true
-        default: 'android14'
-      KERNEL_VERSION:
-        description: "内核版本"
-        required: true
-        default: '6.1'
-      SUSFS_ENABLED:
-        description: "添加 SUSFS"
-        required: true
-        type: boolean
-        default: true
-      BUILD_METHOD:
-        type: choice
-        description: "编译方式"
-        required: true
-        default: gki
-        options:
-          - gki
-      lz4k_enable:
-        description: '是否安装 LZ4K 补丁'
-        required: true
-        type: boolean
-        default: true
-      kpm_enable:
-        description: '是否添加 KPM (内核模块) 支持'
-        required: true
-        type: boolean
-        default: true
-      kernel_suffix:
-        description: '内核后缀(留空默认,开头别加连字符)'
-        required: true
-        type: string
-        default: 'android14-11-o-gc88ee742fca6'
+name: 欧加真 Android 15 通用OKI内核
 
 env:
   TZ: Asia/Shanghai
+  CPU: 'sm8650'
+  FEIL: 'oppo+oplus+realme'
+  ANDROID_VERSION: 'android14'
+  KERNEL_VERSION: '6.1'
+  KERNEL_NAME: 'android14-11-o-gc88ee742fca6'
+  KERNELSU_VARIANT: 'SukiSU-Ultra'
+  KERNELSU_BRANCH: 'susfs-dev'
+
+on:
+  workflow_dispatch:
+  # 取消此处注释代码可开启每日定时编译
+#  schedule:
+#    - cron: '0 23 * * *'  # UTC时间23点（北京时间次日7点）
+    inputs:
+      lz4k_enable:
+        description: '是否安装 LZ4K 补丁'
+        required: true
+        type: choice
+        default: 'true'
+        options:
+          - 'true'
+          - 'false'
+      scx_enable:
+        description: '是否安装风驰内核驱动'
+        required: true
+        type: choice
+        default: 'true'
+        options:
+          - 'true'
+          - 'false'
+      kernel_suffix:
+        description: '内核后缀(留空默认,开头别加连字符)'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
       ksuver: ${{ steps.ksu_version.outputs.ksuver }}
-
     steps:
-      - name: Maximize build space
+      - name: 最大化建筑空间
         uses: easimon/maximize-build-space@master
         with:
           root-reserve-mb: 8192
           temp-reserve-mb: 2048
+          swap-size-mb: 8192
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
 
-      - name: Checkout
-        uses: actions/checkout@main
-
-      - name: Config and dependencies
+      - name: 安装配置环境依赖
         run: |
-          echo "DATE=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
-          git config --global user.name "github-act          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          sudo apt-get update -qq
-          sudo apt-get install -qq -y python3 git curl bison flex make binutils dwarves lld pahole zip perl gcc python-is-python3 bc libssl-dev libelf-dev
-          curl -sSL "https://storage.googleapis.com/git-repo-downloads/repo" -o ~/repo
-          chmod +x ~/repo
-          sudo mv ~/repo /usr/local/bi     
-      - name: Initialize repo and sync
+          sudo apt update && sudo apt upgrade -y
+          sudo apt-get install curl bison flex make binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev -y
+          sudo rm -rf ./llvm.sh
+          sudo wget https://apt.llvm.org/llvm.sh
+          sudo chmod +x llvm.sh
+          sudo sudo ./llvm.sh 20 all
+
+      - name: 初始化源码仓库
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
@@ -91,137 +73,113 @@ jobs:
           git clone --depth 1 --branch scx https://github.com/ferstar/realme_GT5pro-AndroidV-common-source.git common
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
-          rm msm-kernel/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
-          do      
-      - name: Set up KernelSU-SukiSU Ultra
+          done
+
+      - name: 添加 SukiSU-Ultra
+        id: ksu_version
         run: |
           cd kernel_workspace
-          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-dev
+          #if [[ "${{ env.KERNELSU_VARIANT }}" == "SukiSU-Ultra" ]]; then
+          #  echo "BRANCH='-s susfs-dev'" >> $GITHUB_ENV
+          #fi
+          curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/refs/heads/main/kernel/setup.sh" | bash -s susfs-main
           cd ./KernelSU
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10606)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
-          sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
+          echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
+          export KSU_VERSION=$KSU_VERSION
+          sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=$KSU_VERSION/" kernel/Makefile
 
-      - name: Set up susfs
-        if: github.event.inputs.SUSFS_ENABLED == 'true'
+      - name: 应用 SUSFS 修补程序 SukiSU-Ultra
         run: |
           cd kernel_workspace
-          git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
-          git clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
-          echo "Patching susfs"
-          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
-          cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
-          cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-
-          echo "patching zram"
-          cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux
-          cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./common/lib
-          cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto
-          cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
-          
-          # Apply patches
+          git clone https://github.com/ShirkNeko/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
+          git clone https://github.com/ShirkNeko/SukiSU_patch.git
+          cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
+          cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
+          cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+          cp ./SukiSU_patch/hooks/new_hooks.patch ./common/
           cd ./common
-          patch -p1 -F 3 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
-          cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
-          cp ../../SukiSU_patch/69_hide_stuff.patch ./
-          echo "Patching hide_stuff"
-          patch -p1 -F 3 < 69_hide_stuff.patch
-          echo "Patching vfs"
-          patch -p1 -F 3 < syscall_hooks.patch
-          patch -p1 < ../../.repo/manifests/patches/0001-lz4-v1.10.0.patch
-          patch -p1 < ../../.repo/manifests/patches/0001-zstd-v1.5.7.patch
+          patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
+          patch -p1 < new_hooks.patch
 
-          cp ../../SukiSU_patch/other/zram/zram_patch/${{ github.event.inputs.KERNEL_VERSION }}/lz4kd.patch ./
-          echo "Patching lz4kd"
-          patch -p1 -F 3 < lz4kd.patch || true
-          echo 'Patching lz4kd_patch finish'
-          cp ../../SukiSU_patch/other/zram/zram_patch/${{ github.event.inputs.KERNEL_VERSION }}/lz4k_oplus.patch ./
-          echo "patching lz4k_oplus"
-          patch -p1 -F 3 < lz4k_oplus.patch || true
-          echo 'patching lz4k_oplus_patch finish'
-
-      - name: Apply new hook and add configuration
+      - name: 应用 Hide Stuff 修补程序
         run: |
-          cd kernel_workspace/kernel_platform
-          DEFCONFIG_FILE="./common/arch/arm64/configs/gki_defconfig"
+          cd kernel_workspace/common
+          cp ../SukiSU_patch/69_hide_stuff.patch ./
+          patch -p1 < 69_hide_stuff.patch
 
-          # Helper function to set config, ensuring no duplicates and correct value
-          set_config() {
-            local config_name=$1
-            local config_value=$2
-            # Delete existing line for the config
-            sed -i "/^${config_name}=/d" "$DEFCONFIG_FILE"
-            # Add the new config line
-            echo "${config_name}=${config_value}" >> "$DEFCONFIG_FILE"
-          }
-
-          set_config "CONFIG_KSU" "y"
-          set_config "CONFIG_KSU_SUSFS_SUS_SU" "n"
-          set_config "CONFIG_KSU_MANUAL_HOOK" "y"
-          set_config "CONFIG_KSU_SUSFS" "y"
-          set_config "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT" "y"
-          set_config "CONFIG_KSU_SUSFS_SUS_PATH" "y"
-          set_config "CONFIG_KSU_SUSFS_SUS_MOUNT" "y"
-          set_config "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT" "y"
-          set_config "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT" "y"
-          set_config "CONFIG_KSU_SUSFS_SUS_KSTAT" "y"
-          set_config "CONFIG_KSU_SUSFS_SUS_OVERLAYFS" "n"
-          set_config "CONFIG_KSU_SUSFS_TRY_UMOUNT" "y"
-          set_config "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT" "y"
-          set_config "CONFIG_KSU_SUSFS_SPOOF_UNAME" "y"
-          set_config "CONFIG_KSU_SUSFS_ENABLE_LOG" "y"
-          set_config "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS" "y"
-          set_config "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG" "y"
-          set_config "CONFIG_KSU_SUSFS_OPEN_REDIRECT" "y"
-          set_config "CONFIG_NET_SCH" "y"
-          set_config "CONFIG_DEFAULT_FQ" "y"
-          set_config "CONFIG_DEFAULT_NET_SCH" "fq"
-          
-          # 根据输入选项设置 KPM 支持
-          if [[ "${{ github.event.inputs.kpm_enable }}" == "true" ]]; then
-            set_config "CONFIG_KPM" "y"
-          else
-            set_config "CONFIG_KPM" "n"
-          fi
-
-          # Add tethering config settings (moved out of lz4k_enable block and using set_config)
-          set_config "CONFIG_IP_NF_TARGET_TTL" "y"
-          set_config "CONFIG_IP6_NF_TARGET_HL" "y"
-          set_config "CONFIG_IP6_NF_MATCH_HL" "y"
-          
-          # Add personal config setting (moved out of lz4k_enable block and using set_config)
-          set_config "CONFIG_IP_NF_TARGET_ECN" "y"
-
+      - name: 应用 lz4k 补丁
+        run: |
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
-            set_config "CONFIG_ZSMALLOC" "y"
-            set_config "CONFIG_CRYPTO_LZ4HC" "y"
-            set_config "CONFIG_CRYPTO_LZ4K" "y"
-            set_config "CONFIG_CRYPTO_LZ4KD" "y"
-            set_config "CONFIG_CRYPTO_842" "y"
-            
-            # Add tmpfs config setting
-            set_config "CONFIG_TMPFS_XATTR" "y"
-            set_config "CONFIG_TMPFS_POSIX_ACL" "y"
-           
-            # Add bbr and fq config setting
-            set_config "CONFIG_TCP_CONG_ADVANCED" "y"
-            set_config "CONFIG_TCP_CONG_BBR" "y"
-            set_config "CONFIG_TCP_CONG_BIC" "y"
-            set_config "CONFIG_TCP_CONG_WESTWOOD" "y"
-            set_config "CONFIG_TCP_CONG_HTCP" "y"
-            
-            # Add rcu config setting
-            set_config "CONFIG_RCU_TRACE" "n"
+            cd kernel_workspace/common
+            cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./include/linux/
+            cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./lib
+            cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./crypto
+            cp ../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4kd.patch ./
+            patch -p1 -F 3 < lz4kd.patch || true
           fi
-          sed -i 's/check_defconfig//' ./common/build.config.gki
-
-      - name: Force ECN + Reduce overhead
-        if: ${{ github.event.inputs.KERNEL_VERSION == '6.1' || github.event.inputs.KERNEL_VERSION == '6.6' }}
+          
+      - name: 添加 SUSFS 配置设置
         run: |
-          cd kernel_workspace/kernel_platform/common/net/ipv4
+          cd kernel_workspace
+          echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEFAULT_NET_SCH=fq" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NET_SCH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEFAULT_FQ=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # Add tethering config settings (moved out of lz4k_enable block and using set_config)
+          echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # Add tmpfs config setting
+          echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig 
+          # Add bbr and fq config setting
+          echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TCP_CONG_BIC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TCP_CONG_WESTWOOD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TCP_CONG_HTCP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # Add rcu config setting
+          echo "CONFIG_RCU_TRACE=n" >> ./common/arch/arm64/configs/gki_defconfig
+          # Add ecn config setting
+          echo "CONFIG_IP_NF_TARGET_ECN=n" >> ./common/arch/arm64/configs/gki_defconfig
+          if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
+            echo "CONFIG_ZSMALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
+            # 以下配置未核实必要性，待测试
+            #echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
+            #sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
+            #sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' ./common/arch/arm64/configs/gki_defconfig   
+          fi
+      - name: Force ECN + Reduce overhead
+        if: ${{ inputs.kernel_version == '6.1' || inputs.kernel_version == '6.6' }}
+        run: |
+          cd "$CONFIG/kernel_workspace/common/net/ipv4"
           sed -i 's/net->ipv4.sysctl_tcp_ecn = 2;/net->ipv4.sysctl_tcp_ecn = 1;/' tcp_ipv4.c
           grep "sysctl_tcp_ecn" tcp_ipv4.c
           sed -i '/\.procname[[:space:]]*=[[:space:]]*"tcp_ecn"/, /^[[:space:]]*\}/ s/SYSCTL_TWO/SYSCTL_ONE/' sysctl_net_ipv4.c
@@ -230,18 +188,39 @@ jobs:
           sed -i 's/net->ipv4.sysctl_tcp_pacing_ca_ratio = 120;/net->ipv4.sysctl_tcp_pacing_ca_ratio = 110;/' tcp_ipv4.c
           grep "sysctl_tcp_pacing" tcp_ipv4.c
           ls -t | grep -E 'tcp_|sysctl_'
-          
           #禁用 defconfig 检查
           sed -i 's/check_defconfig//' ./common/build.config.gki
 
-      - name: Build kernel
+      - name: 添加制作名称
         run: |
-          cd kernel_workspace/common
-          ./build_with_bazel.py -t ${{ github.event.inputs.CPUD }} ${{ github.event.inputs.BUILD_METHOD }}
-          
-      - name: Apply KPM configs
-        # 仅在启用 KPM 时执行此步骤
-        if: ${{ github.event.inputs.kpm_enable == 'true' }}
+          cd kernel_workspace
+          echo "替换内核版本后缀..."
+          if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
+            echo "当前内核版本后缀：${{ github.event.inputs.kernel_suffix }}"
+            for f in ./common/scripts/setlocalversion; do
+              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ github.event.inputs.kernel_suffix }}\"|" "$f"
+            done
+          else
+            echo "当前内核版本后缀：${{ env.KERNEL_NAME }}"
+            for f in ./common/scripts/setlocalversion; do
+              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
+            done
+          fi
+           
+      - name: 构建内核
+        run: |
+          cd kernel_workspace
+          if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
+            git clone https://github.com/cctv18/sched_ext.git
+            rm -rf ./sched_ext/.git
+            rm -rf ./sched_ext/README.md
+            cp -r ./sched_ext/* ./common/kernel/sched
+          fi
+          cd common
+          make -j$(nproc --all) LLVM=-20 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang LD=ld.lld HOSTCC=clang HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
+          echo "内核编译完成！"
+         
+      - name: 应用patch_linux并修补内核
         run: |
           cd kernel_workspace/common/out/arch/arm64/boot
           curl -LO https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
@@ -249,24 +228,16 @@ jobs:
           ./patch_linux
           rm -f Image
           mv oImage Image
-
-      - name: Apply patch_linux and replace Image
+          
+      - name: 克隆 AnyKernel3 并打包
         run: |
-          cd kernel_workspace/kernel_platform/out/msm-kernel-${{ github.event.inputs.CPUD }}-${{ github.event.inputs.BUILD_METHOD }}/dist
-          curl -LO https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
-          chmod +x patch_linux
-          ./patch_linux
-          rm -f Image
-          mv oImage Image
-
-      - name: Make AnyKernel3
-        run: |
-          git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1
+          cd kernel_workspace
+          git clone https://github.com/cctv18/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
           cd AnyKernel3
-          cp ../kernel_workspace/kernel_platform/out/msm-kernel-${{ github.event.inputs.CPUD }}-${{ github.event.inputs.BUILD_METHOD }}/dist/Image ./Image
+          cp ../common/out/arch/arm64/boot/Image ./Image
           if [ ! -f ./Image ]; then
-            echo "Kernel image file not found, build may fail"
+            echo "未找到内核镜像文件，构建可能出错"
             exit 1
           fi
           if [[ ${{ github.event.inputs.lz4k_enable }} == "true" ]]; then
@@ -281,9 +252,8 @@ jobs:
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
         with:
-          name: AnyKernel3_SukiSUUltra_${{ env.KSUVER }}_${{ github.event.inputs.MANIFEST }}_${{ github.event.inputs.kernel_suffix }}
+          name: Kernel_ZIP_Artifacts
           path: ${{ github.workspace }}/kernel_workspace/*.zip
-
 
   release:
     needs: build
@@ -297,22 +267,22 @@ jobs:
       - name: 下载 ZIP 工件
         uses: actions/download-artifact@v4
         with:
-          name: AnyKernel3_SukiSUUltra_${{ needs.build.outputs.ksuver }}_${{ github.event.inputs.MANIFEST }}_${{ github.event.inputs.kernel_suffix }}
+          name: Kernel_ZIP_Artifacts
           path: ./release_zips
 
       - name: 设置环境变量
         run: |
           if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            FULL_VERSION=${{ format("{0}.75-{1}", env.KERNEL_VERSION, github.event.inputs.kernel_suffix) }}
+            FULL_VERSION=${{ format('{0}.75-{1}', env.KERNEL_VERSION, github.event.inputs.kernel_suffix) }}
             echo "FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
             export FULL_VERSION=$FULL_VERSION
           else
-            FULL_VERSION=${{ format("{0}.75-{1}", env.KERNEL_VERSION, env.KERNEL_NAME) }}
+            FULL_VERSION=${{ format('{0}.75-{1}', env.KERNEL_VERSION, env.KERNEL_NAME) }}
             echo "FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
             export FULL_VERSION=$FULL_VERSION
           fi
-          TIME="$(TZ=\'Asia/Shanghai\' date +\'%y%m%d%H%M%S\')"
-          TIME_FORM="$(TZ=\'Asia/Shanghai\' date +\'%Y-%m-%d %H:%M:%S\')"
+          TIME="$(TZ='Asia/Shanghai' date +'%y%m%d%H%M%S')"
+          TIME_FORM="$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')"
           echo "TIME=$TIME" >> $GITHUB_ENV
           echo "TIME_FORM=$TIME_FORM" >> $GITHUB_ENV
           TAG_HEAD="OPPO+OPlus+Realme-A15-build"
@@ -328,10 +298,10 @@ jobs:
             ### 📱 欧加真 Android 15 SukiSU-Ultra SM8650 通用内核 | 构建信息
             - 内核版本号: ${{ env.FULL_VERSION }}
             - 编译时间: ${{ env.TIME_FORM }}
-            - 机型：欧加真骁龙8Gen3 6.1 Android 15内核通用（基于 Android 15 版官方OKI源码）
-            - 特性：SukiSU Ultra + SUSFS + VFS
+            - 机型：欧加真骁龙8Gen3 6.1 Android 15内核通用（基于一加12 Android 15 版官方OKI源码）
+            - 特性：SukiSU Ultra + SUSFS + VFS + KPM
             - LZ4K支持：${{ github.event.inputs.lz4k_enable }}
-            - KPM支持：${{ github.event.inputs.kpm_enable }}
+            - 风驰内核支持：${{ github.event.inputs.scx_enable }}
             - 推荐系统：ColorOS 15 / RealmeUI 6.0
             - SukiSU管理器下载：[SukiSU-Ultra](https://github.com/ShirkNeko/SukiSU-Ultra/releases)
             ### ⏫️ 更新内容：
