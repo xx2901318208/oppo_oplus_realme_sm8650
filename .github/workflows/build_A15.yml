@@ -114,42 +114,45 @@ jobs:
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10606)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
           sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
-          
-      - name: 应用 SUSFS 修补程序 SukiSU-Ultra
+
+      - name: Set up susfs
         if: github.event.inputs.SUSFS_ENABLED == 'true'
         run: |
           cd kernel_workspace
-          git clone https://github.com/ShirkNeko/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
-          git clone https://github.com/ShirkNeko/SukiSU_patch.git
-          cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
-          cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
-          cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-          cp ./SukiSU_patch/hooks/new_hooks.patch ./common/
+          git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ github.event.inputs.ANDROID_VERSION }}-${{ github.event.inputs.KERNEL_VERSION }}
+          git clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
+          cd kernel_platform
+          echo "Patching susfs"
+          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ github.event.inputs.ANDROID_VERSION }}-${{ github.event.inputs.KERNEL_VERSION }}.patch ./common/
+          cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
+          cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+
+          echo "patching zram"
+          cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux
+          cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./common/lib
+          cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto
+          cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
+          
+          # Apply patches
           cd ./common
-          patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
+          patch -p1 -F 3 < 50_add_susfs_in_gki-${{ github.event.inputs.ANDROID_VERSION }}-${{ github.event.inputs.KERNEL_VERSION }}.patch || true
           cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
           cp ../../SukiSU_patch/69_hide_stuff.patch ./
           echo "Patching hide_stuff"
           patch -p1 -F 3 < 69_hide_stuff.patch
           echo "Patching vfs"
           patch -p1 -F 3 < syscall_hooks.patch
-          
-          curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/0001-lz4-v1.10.0.patch"
-          patch -p1 < 0001-lz4-v1.10.0.patch || true
-          curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/0001-zstd-v1.5.7.patch"
-          patch -p1 < 0001-zstd-v1.5.7.patch || true
-          cd ..
-          
-      - name: 应用 lz4k 补丁
-        run: |
-          if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
-            cd kernel_workspace/common
-            cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./include/linux/
-            cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./lib
-            cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./crypto
-            cp ../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4kd.patch ./
-            patch -p1 -F 3 < lz4kd.patch || true
-          fi
+          patch -p1 < ../../.repo/manifests/patches/0001-lz4-v1.10.0.patch
+          patch -p1 < ../../.repo/manifests/patches/0001-zstd-v1.5.7.patch
+
+          cp ../../SukiSU_patch/other/zram/zram_patch/${{ github.event.inputs.KERNEL_VERSION }}/lz4kd.patch ./
+          echo "Patching lz4kd"
+          patch -p1 -F 3 < lz4kd.patch || true
+          echo 'Patching lz4kd_patch finish'
+          cp ../../SukiSU_patch/other/zram/zram_patch/${{ github.event.inputs.KERNEL_VERSION }}/lz4k_oplus.patch ./
+          echo "patching lz4k_oplus"
+          patch -p1 -F 3 < lz4k_oplus.patch || true
+          echo 'patching lz4k_oplus_patch finish'
       - name: 添加 SUSFS 配置设置
         run: |
            cd kernel_workspace
