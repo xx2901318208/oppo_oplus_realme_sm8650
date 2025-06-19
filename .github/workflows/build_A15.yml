@@ -73,6 +73,9 @@ jobs:
         run: |
           sudo apt update && sudo apt upgrade -y
           sudo apt-get install curl repo bison flex make binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev -y
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/repo
+          chmod a+x ~/repo
+          sudo mv ~/repo /usr/local/bin/repo
           sudo rm -rf ./llvm.sh
           sudo wget https://apt.llvm.org/llvm.sh
           sudo chmod +x llvm.sh
@@ -83,7 +86,7 @@ jobs:
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
           repo init -u https://github.com/xx2901318208/gt5pro_kernel_manifest.git -b realme/sm8650 -m gt5pro.xml --depth=1
-          repo sync 
+          repo sync -c -j$(nproc --all) --no-tags --fail-fast 
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
           rm msm-kernel/android/abi_gki_protected_exports_* || true
