@@ -1,55 +1,32 @@
-name: 欧加真 Android 15 通用OKI内核
-
-env:
-  TZ: Asia/Shanghai
-  CPU: 'sm8650'
-  FEIL: 'oppo+oplus+realme'
-  ANDROID_VERSION: 'android14'
-  KERNEL_VERSION: '6.1'
-  KERNEL_NAME: 'android14-11-o-gc88ee742fca6'
-  KERNELSU_VARIANT: 'SukiSU-Ultra'
-  KERNELSU_BRANCH: 'susfs-dev'
-
+name: Build SukiSu Ultra For Realme GT5 Pro
 on:
   workflow_dispatch:
-  # 取消此处注释代码可开启每日定时编译
-#  schedule:
-#    - cron: '0 23 * * *'  # UTC时间23点（北京时间次日7点）
     inputs:
-      lz4k_enable:
-        description: '是否安装 LZ4K 补丁'
+      CPU:
+        description: "处理器分支"
         required: true
-        type: choice
-        default: 'true'
-        options:
-          - 'true'
-          - 'false'
-      scx_enable:
-        description: '是否安装风驰内核驱动'
+        default: 'sm8650'
+      MANIFEST:
+        description: "配置文件"
         required: true
-        type: choice
-        default: 'true'
-        options:
-          - 'true'
-          - 'false'
-      # 添加 KPM 支持选项
-      kpm_enable:
-        description: '是否添加 KPM (内核模块) 支持'
-        required: true
-        type: choice
-        default: 'true'
-        options:
-          - 'true'
-          - 'false'
-      kernel_suffix:
-        description: '内核后缀(留空默认,开头别加连字符)'
-        required: true
-        type: string
-        default: 'android14-11-o-gc88ee742fca6'
+        default: 'gt5pro'
       CPUD:
         description: "处理器代号"
         required: true
         default: 'pineapple'
+      ANDROID_VERSION:
+        description: "内核安卓版本"
+        required: true
+        default: 'android14'
+      KERNEL_VERSION:
+        description: "内核版本"
+        required: true
+        default: '6.1'
+      SUSFS_ENABLED:
+        description: "添加 SUSFS"
+        required: true
+        type: boolean
+        default: true
       BUILD_METHOD:
         type: choice
         description: "编译方式"
@@ -57,44 +34,55 @@ on:
         default: gki
         options:
           - gki
-      SUSFS_ENABLED:
-        description: "添加 SUSFS"
+      lz4k_enable:
+        description: '是否安装 LZ4K 补丁'
         required: true
         type: boolean
         default: true
-      
+      kpm_enable:
+        description: '是否添加 KPM (内核模块) 支持'
+        required: true
+        type: boolean
+        default: true
+      kernel_suffix:
+        description: '内核后缀(留空默认,开头别加连字符)'
+        required: true
+        type: string
+        default: 'android14-11-o-gc88ee742fca6'
+
+env:
+  TZ: Asia/Shanghai
+
 jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
       ksuver: ${{ steps.ksu_version.outputs.ksuver }}
+
     steps:
-      - name: 最大化建筑空间
+      - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
           root-reserve-mb: 8192
           temp-reserve-mb: 2048
-          swap-size-mb: 8192
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
-          
-      - name: Configure Git
+
+      - name: Checkout
+        uses: actions/checkout@main
+
+      - name: Config and dependencies
         run: |
-         git config --global user.name "xx2901318208"
-         git config --global user.email "2901318208@qq.com"
-         
-      - name: 安装配置环境依赖
-        run: |
-          sudo apt update && sudo apt upgrade -y
-          sudo apt-get install curl bison flex make binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev -y
-          sudo rm -rf ./llvm.sh
-          sudo wget https://apt.llvm.org/llvm.sh
-          sudo chmod +x llvm.sh
-          sudo sudo ./llvm.sh 20 all
-        
-      - name: 初始化源码仓库
+          echo "DATE=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+          git config --global user.name "github-act          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          sudo apt-get update -qq
+          sudo apt-get install -qq -y python3 git curl bison flex make binutils dwarves lld pahole zip perl gcc python-is-python3 bc libssl-dev libelf-dev
+          curl -sSL "https://storage.googleapis.com/git-repo-downloads/repo" -o ~/repo
+          chmod +x ~/repo
+          sudo mv ~/repo /usr/local/bi     
+      - name: Initialize repo and sync
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
@@ -107,8 +95,7 @@ jobs:
           for f in common/scripts/setlocalversion; do
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
-          done
-        
+          do      
       - name: Set up KernelSU-SukiSU Ultra
         run: |
           cd kernel_workspace
@@ -122,11 +109,10 @@ jobs:
         if: github.event.inputs.SUSFS_ENABLED == 'true'
         run: |
           cd kernel_workspace
-          git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-6.1-${{ github.event.inputs.KERNEL_VERSION }}
+          git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
           git clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
-          # cd kernel_platform # This directory might not exist in the new structure
           echo "Patching susfs"
-          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-6.1-${{ github.event.inputs.KERNEL_VERSION }}.patch ./common/
+          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
 
@@ -138,7 +124,7 @@ jobs:
           
           # Apply patches
           cd ./common
-          patch -p1 -F 3 < 50_add_susfs_in_gki-${{ github.event.inputs.ANDROID_VERSION }}-${{ github.event.inputs.KERNEL_VERSION }}.patch || true
+          patch -p1 -F 3 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
           cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
           cp ../../SukiSU_patch/69_hide_stuff.patch ./
           echo "Patching hide_stuff"
@@ -156,83 +142,86 @@ jobs:
           echo "patching lz4k_oplus"
           patch -p1 -F 3 < lz4k_oplus.patch || true
           echo 'patching lz4k_oplus_patch finish'
-      - name: 添加 SUSFS 配置设置
+
+      - name: Apply new hook and add configuration
         run: |
-           cd kernel_workspace
-           DEFCONFIG_FILE="./common/arch/arm64/configs/gki_defconfig"
+          cd kernel_workspace/kernel_platform
+          DEFCONFIG_FILE="./common/arch/arm64/configs/gki_defconfig"
 
-           # Helper function to set config, ensuring no duplicates and correct value
-           set_config() {
-             local config_name=$1
-             local config_value=$2
-             # Delete existing line for the config
-             sed -i "/^${config_name}=/d" "$DEFCONFIG_FILE"
-             # Add the new config line
-             echo "${config_name}=${config_value}" >> "$DEFCONFIG_FILE"
-           }
+          # Helper function to set config, ensuring no duplicates and correct value
+          set_config() {
+            local config_name=$1
+            local config_value=$2
+            # Delete existing line for the config
+            sed -i "/^${config_name}=/d" "$DEFCONFIG_FILE"
+            # Add the new config line
+            echo "${config_name}=${config_value}" >> "$DEFCONFIG_FILE"
+          }
 
-           set_config "CONFIG_KSU" "y"
-           set_config "CONFIG_KSU_SUSFS_SUS_SU" "n"
-           set_config "CONFIG_KSU_MANUAL_HOOK" "y"
-           set_config "CONFIG_KSU_SUSFS" "y"
-           set_config "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT" "y"
-           set_config "CONFIG_KSU_SUSFS_SUS_PATH" "y"
-           set_config "CONFIG_KSU_SUSFS_SUS_MOUNT" "y"
-           set_config "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT" "y"
-           set_config "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT" "y"
-           set_config "CONFIG_KSU_SUSFS_SUS_KSTAT" "y"
-           set_config "CONFIG_KSU_SUSFS_SUS_OVERLAYFS" "n"
-           set_config "CONFIG_KSU_SUSFS_TRY_UMOUNT" "y"
-           set_config "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT" "y"
-           set_config "CONFIG_KSU_SUSFS_SPOOF_UNAME" "y"
-           set_config "CONFIG_KSU_SUSFS_ENABLE_LOG" "y"
-           set_config "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS" "y"
-           set_config "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG" "y"
-           set_config "CONFIG_KSU_SUSFS_OPEN_REDIRECT" "y"
-           set_config "CONFIG_NET_SCH" "y"
-           set_config "CONFIG_DEFAULT_FQ" "y"
-           set_config "CONFIG_DEFAULT_NET_SCH" "fq"
-           
-           # 根据输入选项设置 KPM 支持
-           if [[ "${{ github.event.inputs.kpm_enable }}" == "true" ]]; then
-             set_config "CONFIG_KPM" "y"
-           else
-             set_config "CONFIG_KPM" "n"
-           fi
+          set_config "CONFIG_KSU" "y"
+          set_config "CONFIG_KSU_SUSFS_SUS_SU" "n"
+          set_config "CONFIG_KSU_MANUAL_HOOK" "y"
+          set_config "CONFIG_KSU_SUSFS" "y"
+          set_config "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT" "y"
+          set_config "CONFIG_KSU_SUSFS_SUS_PATH" "y"
+          set_config "CONFIG_KSU_SUSFS_SUS_MOUNT" "y"
+          set_config "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT" "y"
+          set_config "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT" "y"
+          set_config "CONFIG_KSU_SUSFS_SUS_KSTAT" "y"
+          set_config "CONFIG_KSU_SUSFS_SUS_OVERLAYFS" "n"
+          set_config "CONFIG_KSU_SUSFS_TRY_UMOUNT" "y"
+          set_config "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT" "y"
+          set_config "CONFIG_KSU_SUSFS_SPOOF_UNAME" "y"
+          set_config "CONFIG_KSU_SUSFS_ENABLE_LOG" "y"
+          set_config "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS" "y"
+          set_config "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG" "y"
+          set_config "CONFIG_KSU_SUSFS_OPEN_REDIRECT" "y"
+          set_config "CONFIG_NET_SCH" "y"
+          set_config "CONFIG_DEFAULT_FQ" "y"
+          set_config "CONFIG_DEFAULT_NET_SCH" "fq"
+          
+          # 根据输入选项设置 KPM 支持
+          if [[ "${{ github.event.inputs.kpm_enable }}" == "true" ]]; then
+            set_config "CONFIG_KPM" "y"
+          else
+            set_config "CONFIG_KPM" "n"
+          fi
 
-           # Add tethering config settings (moved out of lz4k_enable block and using set_config)
-           set_config "CONFIG_IP_NF_TARGET_TTL" "y"
-           set_config "CONFIG_IP6_NF_TARGET_HL" "y"
-           set_config "CONFIG_IP6_NF_MATCH_HL" "y"
-           
-           # Add personal config setting (moved out of lz4k_enable block and using set_config)
-           set_config "CONFIG_IP_NF_TARGET_ECN" "y"
+          # Add tethering config settings (moved out of lz4k_enable block and using set_config)
+          set_config "CONFIG_IP_NF_TARGET_TTL" "y"
+          set_config "CONFIG_IP6_NF_TARGET_HL" "y"
+          set_config "CONFIG_IP6_NF_MATCH_HL" "y"
+          
+          # Add personal config setting (moved out of lz4k_enable block and using set_config)
+          set_config "CONFIG_IP_NF_TARGET_ECN" "y"
 
-           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
-             set_config "CONFIG_ZSMALLOC" "y"
-             set_config "CONFIG_CRYPTO_LZ4HC" "y"
-             set_config "CONFIG_CRYPTO_LZ4K" "y"
-             set_config "CONFIG_CRYPTO_LZ4KD" "y"
-             set_config "CONFIG_CRYPTO_842" "y"
-             
-             # Add tmpfs config setting
-             set_config "CONFIG_TMPFS_XATTR" "y"
-             set_config "CONFIG_TMPFS_POSIX_ACL" "y"
+          if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
+            set_config "CONFIG_ZSMALLOC" "y"
+            set_config "CONFIG_CRYPTO_LZ4HC" "y"
+            set_config "CONFIG_CRYPTO_LZ4K" "y"
+            set_config "CONFIG_CRYPTO_LZ4KD" "y"
+            set_config "CONFIG_CRYPTO_842" "y"
             
-             # Add bbr and fq config setting
-             set_config "CONFIG_TCP_CONG_ADVANCED" "y"
-             set_config "CONFIG_TCP_CONG_BBR" "y"
-             set_config "CONFIG_TCP_CONG_BIC" "y"
-             set_config "CONFIG_TCP_CONG_WESTWOOD" "y"
-             set_config "CONFIG_TCP_CONG_HTCP" "y"
-             
-             # Add rcu config setting
-             set_config "CONFIG_RCU_TRACE" "n"
-           fi
+            # Add tmpfs config setting
+            set_config "CONFIG_TMPFS_XATTR" "y"
+            set_config "CONFIG_TMPFS_POSIX_ACL" "y"
+           
+            # Add bbr and fq config setting
+            set_config "CONFIG_TCP_CONG_ADVANCED" "y"
+            set_config "CONFIG_TCP_CONG_BBR" "y"
+            set_config "CONFIG_TCP_CONG_BIC" "y"
+            set_config "CONFIG_TCP_CONG_WESTWOOD" "y"
+            set_config "CONFIG_TCP_CONG_HTCP" "y"
+            
+            # Add rcu config setting
+            set_config "CONFIG_RCU_TRACE" "n"
+          fi
+          sed -i 's/check_defconfig//' ./common/build.config.gki
+
       - name: Force ECN + Reduce overhead
-        if: ${{ inputs.kernel_version == '6.1' || inputs.kernel_version == '6.6' }}
+        if: ${{ github.event.inputs.KERNEL_VERSION == '6.1' || github.event.inputs.KERNEL_VERSION == '6.6' }}
         run: |
-          cd kernel_workspace/common/net/ipv4
+          cd kernel_workspace/kernel_platform/common/net/ipv4
           sed -i 's/net->ipv4.sysctl_tcp_ecn = 2;/net->ipv4.sysctl_tcp_ecn = 1;/' tcp_ipv4.c
           grep "sysctl_tcp_ecn" tcp_ipv4.c
           sed -i '/\.procname[[:space:]]*=[[:space:]]*"tcp_ecn"/, /^[[:space:]]*\}/ s/SYSCTL_TWO/SYSCTL_ONE/' sysctl_net_ipv4.c
@@ -245,22 +234,6 @@ jobs:
           #禁用 defconfig 检查
           sed -i 's/check_defconfig//' ./common/build.config.gki
 
-
-      - name: 添加制作名称
-        run: |
-          cd kernel_workspace
-          echo "替换内核版本后缀..."
-          if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            echo "当前内核版本后缀：${{ github.event.inputs.kernel_suffix }}"
-            for f in ./common/scripts/setlocalversion; do
-              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ github.event.inputs.kernel_suffix }}\"|" "$f"
-            done
-          else
-            echo "当前内核版本后缀：${{ env.KERNEL_NAME }}"
-            for f in ./common/scripts/setlocalversion; do
-              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
-            done
-          fi
       - name: Build kernel
         run: |
           cd kernel_workspace/common
@@ -276,16 +249,24 @@ jobs:
           ./patch_linux
           rm -f Image
           mv oImage Image
-          
-      - name: 克隆 AnyKernel3 并打包
+
+      - name: Apply patch_linux and replace Image
         run: |
-          cd kernel_workspace
-          git clone https://github.com/cctv18/AnyKernel3 --depth=1
+          cd kernel_workspace/kernel_platform/out/msm-kernel-${{ github.event.inputs.CPUD }}-${{ github.event.inputs.BUILD_METHOD }}/dist
+          curl -LO https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
+          chmod +x patch_linux
+          ./patch_linux
+          rm -f Image
+          mv oImage Image
+
+      - name: Make AnyKernel3
+        run: |
+          git clone https://github.com/Kernel-SU/AnyKernel3.git --depth=1
           rm -rf ./AnyKernel3/.git
           cd AnyKernel3
-          cp ../common/out/arch/arm64/boot/Image ./Image
+          cp ../kernel_workspace/kernel_platform/out/msm-kernel-${{ github.event.inputs.CPUD }}-${{ github.event.inputs.BUILD_METHOD }}/dist/Image ./Image
           if [ ! -f ./Image ]; then
-            echo "未找到内核镜像文件，构建可能出错"
+            echo "Kernel image file not found, build may fail"
             exit 1
           fi
           if [[ ${{ github.event.inputs.lz4k_enable }} == "true" ]]; then
@@ -300,8 +281,9 @@ jobs:
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
         with:
-          name: Kernel_ZIP_Artifacts
+          name: AnyKernel3_SukiSUUltra_${{ env.KSUVER }}_${{ github.event.inputs.MANIFEST }}_${{ github.event.inputs.kernel_suffix }}
           path: ${{ github.workspace }}/kernel_workspace/*.zip
+
 
   release:
     needs: build
@@ -315,22 +297,22 @@ jobs:
       - name: 下载 ZIP 工件
         uses: actions/download-artifact@v4
         with:
-          name: Kernel_ZIP_Artifacts
+          name: AnyKernel3_SukiSUUltra_${{ needs.build.outputs.ksuver }}_${{ github.event.inputs.MANIFEST }}_${{ github.event.inputs.kernel_suffix }}
           path: ./release_zips
 
       - name: 设置环境变量
         run: |
           if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            FULL_VERSION=${{ format('{0}.75-{1}', env.KERNEL_VERSION, github.event.inputs.kernel_suffix) }}
+            FULL_VERSION=${{ format("{0}.75-{1}", env.KERNEL_VERSION, github.event.inputs.kernel_suffix) }}
             echo "FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
             export FULL_VERSION=$FULL_VERSION
           else
-            FULL_VERSION=${{ format('{0}.75-{1}', env.KERNEL_VERSION, env.KERNEL_NAME) }}
+            FULL_VERSION=${{ format("{0}.75-{1}", env.KERNEL_VERSION, env.KERNEL_NAME) }}
             echo "FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
             export FULL_VERSION=$FULL_VERSION
           fi
-          TIME="$(TZ='Asia/Shanghai' date +'%y%m%d%H%M%S')"
-          TIME_FORM="$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')"
+          TIME="$(TZ=\'Asia/Shanghai\' date +\'%y%m%d%H%M%S\')"
+          TIME_FORM="$(TZ=\'Asia/Shanghai\' date +\'%Y-%m-%d %H:%M:%S\')"
           echo "TIME=$TIME" >> $GITHUB_ENV
           echo "TIME_FORM=$TIME_FORM" >> $GITHUB_ENV
           TAG_HEAD="OPPO+OPlus+Realme-A15-build"
