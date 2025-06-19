@@ -82,9 +82,9 @@ jobs:
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
-          git clone --depth 1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-vendor-source.git vendor
+          git clone --depth=1 scx  https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-vendor-source.git vendor
           mv vendor/* ..
-          git clone --depth=1 https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-common-source.git common
+          git clone --depth=1 --branch scx https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-common-source.git common
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
@@ -267,7 +267,7 @@ jobs:
           export PATH="/usr/lib/ccache:$PATH"
           # Removed redundant 'sudo apt install libelf-dev' as it's installed in '安装配置环境依赖' step
           cd kernel_workspace/common
-          make -j$(nproc --all) LLVM=-20 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang LD=ld.lld HOSTCC=clang HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
+          make -j$(nproc --all) LLVM=20 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang LD=ld.lld HOSTCC=clang HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
           echo "内核编译完成！"
           
       - name: Apply KPM configs
