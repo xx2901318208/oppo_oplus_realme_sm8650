@@ -263,12 +263,24 @@ jobs:
           fi
       - name: Build Kernel
         run: |
-          export KBUILD_BUILD_TIMESTAMP="${{ github.event.inputs.KERNEL_TIME }}"
-          export PATH="$GITHUB_WORKSPACE/kernel_workspace/kernel_platform/prebuilts/clang/host/linux-x86/clang-r510928/bin:$PATH"
-          export PATH="/usr/lib/ccache:$PATH"
-          # Removed redundant 'sudo apt install libelf-dev' as it's installed in '安装配置环境依赖' step
           cd kernel_workspace/common
-          make -j$(nproc --all) LLVM=-20 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang LD=ld.lld HOSTCC=clang HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
+          # 设置编译环境变量
+          export KBUILD_BUILD_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          export PATH="/usr/lib/ccache:$PATH"
+          
+          # 使用更可靠的编译命令
+          make -j$(nproc --all) \
+            LLVM=1 \
+            LLVM_IAS=1 \
+            ARCH=arm64 \
+            CC=clang \
+            LD=ld.lld \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabihf- \
+            O=out \
+            KCFLAGS="-Wno-error" \
+            gki_defconfig all
+            
           echo "内核编译完成！"
           
       - name: Apply KPM configs
