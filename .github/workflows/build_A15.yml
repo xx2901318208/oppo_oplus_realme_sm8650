@@ -173,9 +173,11 @@ jobs:
            set_config "CONFIG_KSU_SUSFS_ENABLE_LOG" "y"
            set_config "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS" "y"
            set_config "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG" "y"
-           set_config "CONFIG_KSU_SUSFS_SUS_SU=n" "y"
            set_config "CONFIG_KSU_SUSFS_OPEN_REDIRECT" "y"
-
+           set_config "CONFIG_NET_SCH" "y"
+           set_config "CONFIG_DEFAULT_FQ" "y"
+           set_config "CONFIG_DEFAULT_NET_SCH" "fq"
+           
            # 根据输入选项设置 KPM 支持
            if [[ "${{ github.event.inputs.kpm_enable }}" == "true" ]]; then
              set_config "CONFIG_KPM" "y"
