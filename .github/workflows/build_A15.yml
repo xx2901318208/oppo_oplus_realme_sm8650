@@ -46,6 +46,22 @@ on:
         required: true
         type: string
         default: 'android14-11-o-gc88ee742fca6'
+      CPUD:
+        description: "处理器代号"
+        required: true
+        default: 'pineapple'
+      BUILD_METHOD:
+        type: choice
+        description: "编译方式"
+        required: true
+        default: gki
+        options:
+          - gki
+      SUSFS_ENABLED:
+        description: "添加 SUSFS"
+        required: true
+        type: boolean
+        default: true
       
 jobs:
   build:
@@ -93,23 +109,10 @@ jobs:
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
         
-      #- name: 初始化源码仓库
-      #run: |
-      #rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
-      #echo "正在克隆源码仓库..."
-      #git clone --depth 1 -b master https://github.com/ferstar/realme_GT5pro-AndroidV-vendor-source.git vendor
-      #mv vendor/* ..
-      #git clone --depth=1 -b master https://github.com/ferstar/realme_GT5pro-AndroidV-common-source.git common
-      #echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
-      #rm common/android/abi_gki_protected_exports_* || true
-      #for f in common/scripts/setlocalversion; do
-      #sed -i 's/ -dirty//g' "$f"
-      #sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
-      #done
       - name: Set up KernelSU-SukiSU Ultra
         run: |
           cd kernel_workspace
-          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-dev
           cd ./KernelSU
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10606)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
@@ -121,7 +124,7 @@ jobs:
           cd kernel_workspace
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ github.event.inputs.ANDROID_VERSION }}-${{ github.event.inputs.KERNEL_VERSION }}
           git clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
-          cd kernel_platform
+          # cd kernel_platform # This directory might not exist in the new structure
           echo "Patching susfs"
           cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ github.event.inputs.ANDROID_VERSION }}-${{ github.event.inputs.KERNEL_VERSION }}.patch ./common/
           cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
@@ -229,7 +232,7 @@ jobs:
       - name: Force ECN + Reduce overhead
         if: ${{ inputs.kernel_version == '6.1' || inputs.kernel_version == '6.6' }}
         run: |
-          cd "$CONFIG/kernel_workspace/common/net/ipv4"
+          cd kernel_workspace/common/net/ipv4
           sed -i 's/net->ipv4.sysctl_tcp_ecn = 2;/net->ipv4.sysctl_tcp_ecn = 1;/' tcp_ipv4.c
           grep "sysctl_tcp_ecn" tcp_ipv4.c
           sed -i '/\.procname[[:space:]]*=[[:space:]]*"tcp_ecn"/, /^[[:space:]]*\}/ s/SYSCTL_TWO/SYSCTL_ONE/' sysctl_net_ipv4.c
@@ -260,7 +263,7 @@ jobs:
           fi
       - name: Build kernel
         run: |
-          cd kernel_workspace
+          cd kernel_workspace/common
           ./build_with_bazel.py -t ${{ github.event.inputs.CPUD }} ${{ github.event.inputs.BUILD_METHOD }}
           
       - name: Apply KPM configs
