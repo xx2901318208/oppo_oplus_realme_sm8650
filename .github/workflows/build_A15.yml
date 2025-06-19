@@ -82,7 +82,7 @@ jobs:
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
-          repo init -u https://github.com/xx2901318208/gt5pro_kernel_manifest.git GitHub - xx2901318208/gt5pro_kernel_manifest: SUKISU Ultra Kernel for Realme GT5 Pro(RMX3888) GitHub - xx2901318208/gt5pro_kernel_manifest: SUKISU Ultra Kernel for Realme GT5 Pro(RMX3888)   -b realme/sm8650 -m gt5pro.xml --depth=1
+          repo init -u https://github.com/xx2901318208/gt5pro_kernel_manifest.git -b realme/sm8650 -m gt5pro.xml --depth=1
           repo sync -c -j$(nproc --all) --no-tags --fail-fast
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
