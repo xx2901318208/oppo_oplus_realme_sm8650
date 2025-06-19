@@ -173,6 +173,7 @@ jobs:
            set_config "CONFIG_KSU_SUSFS_ENABLE_LOG" "y"
            set_config "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS" "y"
            set_config "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG" "y"
+           set_config "CONFIG_KSU_SUSFS_SUS_SU=n" "y"
            set_config "CONFIG_KSU_SUSFS_OPEN_REDIRECT" "y"
 
            # 根据输入选项设置 KPM 支持
@@ -333,11 +334,10 @@ jobs:
             ### 📱 欧加真 Android 15 SukiSU-Ultra SM8650 通用内核 | 构建信息
             - 内核版本号: ${{ env.FULL_VERSION }}
             - 编译时间: ${{ env.TIME_FORM }}
-            - 机型：欧加真骁龙8Gen3 6.1 Android 15内核通用（基于OPPO FindX7U Android 15 版官方OKI源码）
+            - 机型：欧加真骁龙8Gen3 6.1 Android 15内核通用（基于 Android 15 版官方OKI源码）
             - 特性：SukiSU Ultra + SUSFS + VFS
             - LZ4K支持：${{ github.event.inputs.lz4k_enable }}
             - KPM支持：${{ github.event.inputs.kpm_enable }}
-            - 风驰内核支持：${{ github.event.inputs.scx_enable }}
             - 推荐系统：ColorOS 15 / RealmeUI 6.0
             - SukiSU管理器下载：[SukiSU-Ultra](https://github.com/ShirkNeko/SukiSU-Ultra/releases)
             ### ⏫️ 更新内容：
