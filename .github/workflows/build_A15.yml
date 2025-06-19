@@ -69,69 +69,14 @@ jobs:
          git config --global user.name "xx2901318208"
          git config --global user.email "2901318208@qq.com"
          
-      - name: 安装配置环境依赖并设置LLVM路径
+      - name: 安装配置环境依赖
         run: |
           sudo apt update && sudo apt upgrade -y
           sudo apt-get install curl bison flex make binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev -y
           sudo rm -rf ./llvm.sh
           sudo wget https://apt.llvm.org/llvm.sh
           sudo chmod +x llvm.sh
-          sudo ./llvm.sh 20 all
-          sudo apt-get install llvm-20-tools -y
-
-          echo "Verifying LLVM tools installation and setting PATH for llvm-20..."
-
-          # 明确查找 llvm-20 版本的工具
-          LLVM_20_BIN_DIR="/usr/lib/llvm-20/bin"
-          LLVM_NM_20_PATH="${LLVM_20_BIN_DIR}/llvm-nm"
-          LLVM_AR_20_PATH="${LLVM_20_BIN_DIR}/llvm-ar"
-
-          # 检查 llvm-20 版本的工具是否存在
-          if [[ -f "$LLVM_NM_20_PATH" ]]; then
-            echo "Found llvm-nm-20 at: $LLVM_NM_20_PATH"
-            echo "Adding $LLVM_20_BIN_DIR to GITHUB_PATH with high priority"
-            # 将 llvm-20 的 bin 目录添加到 PATH 的最前面
-            echo "$LLVM_20_BIN_DIR" >> $GITHUB_PATH
-          else
-            echo "Error: llvm-nm-20 not found at expected path: $LLVM_NM_20_PATH"
-            echo "Listing contents of /usr/lib/llvm-20/bin for debugging:"
-            ls -la "$LLVM_20_BIN_DIR" || true
-            exit 1
-          fi
-
-          if [[ -f "$LLVM_AR_20_PATH" ]]; then
-            echo "Found llvm-ar-20 at: $LLVM_AR_20_PATH"
-            # llvm-ar-20 应该和 llvm-nm-20 在同一个目录，所以 PATH 已经设置
-          else
-            echo "Error: llvm-ar-20 not found at expected path: $LLVM_AR_20_PATH"
-            exit 1
-          fi
-
-          # 再次验证，此时应该能通过 command -v 找到 llvm-nm 和 llvm-ar，并且是 llvm-20 版本
-          echo "Verifying llvm-nm and llvm-ar availability via command -v after PATH update..."
-          if ! command -v llvm-nm &> /dev/null; then
-              echo "Error: llvm-nm still not found via command -v even after attempting to update PATH."
-              echo "Current PATH: $PATH"
-              exit 1
-          else
-              echo "llvm-nm is now available at: $(command -v llvm-nm)"
-              # 验证是否是 llvm-20 版本
-              if [[ "$(readlink -f $(command -v llvm-nm))" != "$LLVM_NM_20_PATH" ]]; then
-                  echo "Warning: llvm-nm found is not the expected llvm-20 version. Found: $(readlink -f $(command -v llvm-nm))"
-                  # 如果不是期望的版本，可能需要更强的措施，例如删除旧版本或使用 update-alternatives
-              fi
-          fi
-
-          if ! command -v llvm-ar &> /dev/null; then
-              echo "Error: llvm-ar still not found via command -v even after attempting to update PATH."
-              echo "Current PATH: $PATH"
-              exit 1
-          else
-              echo "llvm-ar is now available at: $(command -v llvm-ar)"
-              if [[ "$(readlink -f $(command -v llvm-ar))" != "$LLVM_AR_20_PATH" ]]; then
-                  echo "Warning: llvm-ar found is not the expected llvm-20 version. Found: $(readlink -f $(command -v llvm-ar))"
-              fi
-          fi
+          sudo sudo ./llvm.sh 20 all
         
       - name: 初始化源码仓库
         run: |
