@@ -32,6 +32,15 @@ on:
         options:
           - 'true'
           - 'false'
+      # 添加 KPM 支持选项
+      kpm_enable:
+        description: '是否添加 KPM (内核模块) 支持'
+        required: true
+        type: choice
+        default: 'true'
+        options:
+          - 'true'
+          - 'false'
       kernel_suffix:
         description: '内核后缀(留空默认,开头别加连字符)'
         required: true
@@ -88,9 +97,6 @@ jobs:
         id: ksu_version
         run: |
           cd kernel_workspace
-          #if [[ "${{ env.KERNELSU_VARIANT }}" == "SukiSU-Ultra" ]]; then
-          #  echo "BRANCH='-s susfs-dev'" >> $GITHUB_ENV
-          #fi
           curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/refs/heads/main/kernel/setup.sh" | bash -s susfs-dev
           cd ./KernelSU
           KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10606)
@@ -151,7 +157,6 @@ jobs:
            }
 
            set_config "CONFIG_KSU" "y"
-           set_config "CONFIG_KPM" "y"
            set_config "CONFIG_KSU_SUSFS_SUS_SU" "n"
            set_config "CONFIG_KSU_MANUAL_HOOK" "y"
            set_config "CONFIG_KSU_SUSFS" "y"
@@ -169,6 +174,13 @@ jobs:
            set_config "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS" "y"
            set_config "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG" "y"
            set_config "CONFIG_KSU_SUSFS_OPEN_REDIRECT" "y"
+
+           # 根据输入选项设置 KPM 支持
+           if [[ "${{ github.event.inputs.kpm_enable }}" == "true" ]]; then
+             set_config "CONFIG_KPM" "y"
+           else
+             set_config "CONFIG_KPM" "n"
+           fi
 
            # Add tethering config settings (moved out of lz4k_enable block and using set_config)
            set_config "CONFIG_IP_NF_TARGET_TTL" "y"
@@ -202,7 +214,7 @@ jobs:
       - name: Force ECN + Reduce overhead
         if: ${{ inputs.kernel_version == '6.1' || inputs.kernel_version == '6.6' }}
         run: |
-          cd "$CONFIG/kernel_platform/common/net/ipv4"
+          cd "$CONFIG/kernel_workspace/common/net/ipv4"
           sed -i 's/net->ipv4.sysctl_tcp_ecn = 2;/net->ipv4.sysctl_tcp_ecn = 1;/' tcp_ipv4.c
           grep "sysctl_tcp_ecn" tcp_ipv4.c
           sed -i '/\.procname[[:space:]]*=[[:space:]]*"tcp_ecn"/, /^[[:space:]]*\}/ s/SYSCTL_TWO/SYSCTL_ONE/' sysctl_net_ipv4.c
@@ -242,6 +254,8 @@ jobs:
           echo "内核编译完成！"
           
       - name: Apply KPM configs
+        # 仅在启用 KPM 时执行此步骤
+        if: ${{ github.event.inputs.kpm_enable == 'true' }}
         run: |
           cd kernel_workspace/common/out/arch/arm64/boot
           curl -LO https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.11-beta/patch_linux
@@ -317,12 +331,12 @@ jobs:
           name: "${{ env.TAG_HEAD }}-${{ env.FULL_VERSION }}"
           body: |
             ### 📱 欧加真 Android 15 SukiSU-Ultra SM8650 通用内核 | 构建信息
-            ### 📱 欧加真 Android 15 SukiSU-Ultra SM8650 通用内核 | 构建信息
             - 内核版本号: ${{ env.FULL_VERSION }}
             - 编译时间: ${{ env.TIME_FORM }}
             - 机型：欧加真骁龙8Gen3 6.1 Android 15内核通用（基于OPPO FindX7U Android 15 版官方OKI源码）
-            - 特性：SukiSU Ultra + SUSFS + VFS + KPM
+            - 特性：SukiSU Ultra + SUSFS + VFS
             - LZ4K支持：${{ github.event.inputs.lz4k_enable }}
+            - KPM支持：${{ github.event.inputs.kpm_enable }}
             - 风驰内核支持：${{ github.event.inputs.scx_enable }}
             - 推荐系统：ColorOS 15 / RealmeUI 6.0
             - SukiSU管理器下载：[SukiSU-Ultra](https://github.com/ShirkNeko/SukiSU-Ultra/releases)
