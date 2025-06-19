@@ -261,27 +261,10 @@ jobs:
               sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
             done
           fi
-      - name: Build Kernel
+      - name: Build kernel
         run: |
-          cd kernel_workspace/common
-          # 设置编译环境变量
-          export KBUILD_BUILD_TIMESTAMP=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          export PATH="/usr/lib/ccache:$PATH"
-          
-          # 使用更可靠的编译命令
-          make -j$(nproc --all) \
-            LLVM=1 \
-            LLVM_IAS=1 \
-            ARCH=arm64 \
-            CC=clang \
-            LD=ld.lld \
-            CROSS_COMPILE=aarch64-linux-gnu- \
-            CROSS_COMPILE_ARM32=arm-linux-gnueabihf- \
-            O=out \
-            KCFLAGS="-Wno-error" \
-            gki_defconfig all
-            
-          echo "内核编译完成！"
+          cd kernel_workspace
+          ./build_with_bazel.py -t ${{ github.event.inputs.CPUD }} ${{ github.event.inputs.BUILD_METHOD }}
           
       - name: Apply KPM configs
         # 仅在启用 KPM 时执行此步骤
