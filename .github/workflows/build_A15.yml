@@ -127,13 +127,12 @@ jobs:
           cp ./SukiSU_patch/hooks/new_hooks.patch ./common/
           cd ./common
           patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
-          
-      - name: 应用 Hide Stuff 修补程序
-        run: |
-          cd kernel_workspace/common
-          cp ../SukiSU_patch/69_hide_stuff.patch ./
-          patch -p1 < 69_hide_stuff.patch
-          patch -p1 < new_hooks.patch
+          cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
+          cp ../../SukiSU_patch/69_hide_stuff.patch ./
+          echo "Patching hide_stuff"
+          patch -p1 -F 3 < 69_hide_stuff.patch
+          echo "Patching vfs"
+          patch -p1 -F 3 < syscall_hooks.patch
           
           curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/0001-lz4-v1.10.0.patch"
           patch -p1 < 0001-lz4-v1.10.0.patch || true
