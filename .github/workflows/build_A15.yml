@@ -69,27 +69,64 @@ jobs:
          git config --global user.name "xx2901318208"
          git config --global user.email "2901318208@qq.com"
          
-      - name: 安装配置环境依赖
+      - name: 安装配置环境依赖并设置LLVM路径
         run: |
           sudo apt update && sudo apt upgrade -y
           sudo apt-get install curl bison flex make binutils dwarves git lld pahole zip perl make gcc python3 python-is-python3 bc libssl-dev libelf-dev -y
           sudo rm -rf ./llvm.sh
           sudo wget https://apt.llvm.org/llvm.sh
           sudo chmod +x llvm.sh
-          sudo sudo ./llvm.sh 20 all
-          # 确保安装 llvm-tools，包含 llvm-nm 和 llvm-ar
+          sudo ./llvm.sh 20 all
           sudo apt-get install llvm-20-tools -y
-          
-          # 验证 llvm-nm 和 llvm-ar 是否可用
-          if ! command -v llvm-nm &> /dev/null
-          then
-              echo "Error: llvm-nm not found after installation. Please check LLVM installation."
-              exit 1
+
+          echo "Verifying LLVM tools installation and PATH..."
+
+          # 尝试查找 llvm-nm 的位置
+          # 常见的 LLVM 安装路径包括 /usr/bin, /usr/local/bin, /usr/lib/llvm-X/bin
+          LLVM_NM_PATH=$(find /usr -name llvm-nm-20 -o -name llvm-nm | head -n 1)
+          LLVM_AR_PATH=$(find /usr -name llvm-ar-20 -o -name llvm-ar | head -n 1)
+
+          if [[ -z "$LLVM_NM_PATH" ]]; then
+            echo "Error: llvm-nm could not be found anywhere in /usr after installation."
+            echo "Listing contents of /usr/lib/llvm-20/bin for debugging:"
+            ls -la /usr/lib/llvm-20/bin || true
+            exit 1
+          else
+            echo "Found llvm-nm at: $LLVM_NM_PATH"
+            LLVM_BIN_DIR=$(dirname "$LLVM_NM_PATH")
+            echo "Adding $LLVM_BIN_DIR to GITHUB_PATH"
+            echo "$LLVM_BIN_DIR" >> $GITHUB_PATH
           fi
-          if ! command -v llvm-ar &> /dev/null
-          then
-              echo "Error: llvm-ar not found after installation. Please check LLVM installation."
+
+          if [[ -z "$LLVM_AR_PATH" ]]; then
+            echo "Error: llvm-ar could not be found anywhere in /usr after installation."
+            exit 1
+          else
+            echo "Found llvm-ar at: $LLVM_AR_PATH"
+            # 假设 llvm-ar 和 llvm-nm 在同一个目录下，如果上面已添加，这里无需重复
+            LLVM_AR_BIN_DIR=$(dirname "$LLVM_AR_PATH")
+            if [[ "$LLVM_BIN_DIR" != "$LLVM_AR_BIN_DIR" ]]; then
+                echo "Adding $LLVM_AR_BIN_DIR to GITHUB_PATH for llvm-ar"
+                echo "$LLVM_AR_BIN_DIR" >> $GITHUB_PATH
+            fi
+          fi
+
+          # 再次验证，此时应该能通过 command -v 找到
+          echo "Verifying llvm-nm and llvm-ar availability via command -v after PATH update..."
+          if ! command -v llvm-nm &> /dev/null; then
+              echo "Error: llvm-nm still not found via command -v even after attempting to update PATH."
+              echo "Current PATH: $PATH"
               exit 1
+          else
+              echo "llvm-nm is now available at: $(command -v llvm-nm)"
+          fi
+
+          if ! command -v llvm-ar &> /dev/null; then
+              echo "Error: llvm-ar still not found via command -v even after attempting to update PATH."
+              echo "Current PATH: $PATH"
+              exit 1
+          else
+              echo "llvm-ar is now available at: $(command -v llvm-ar)"
           fi
         
       - name: 初始化源码仓库
