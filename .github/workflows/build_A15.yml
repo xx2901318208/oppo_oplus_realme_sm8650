@@ -77,6 +77,20 @@ jobs:
           sudo wget https://apt.llvm.org/llvm.sh
           sudo chmod +x llvm.sh
           sudo sudo ./llvm.sh 20 all
+          # 确保安装 llvm-tools，包含 llvm-nm 和 llvm-ar
+          sudo apt-get install llvm-20-tools -y
+          
+          # 验证 llvm-nm 和 llvm-ar 是否可用
+          if ! command -v llvm-nm &> /dev/null
+          then
+              echo "Error: llvm-nm not found after installation. Please check LLVM installation."
+              exit 1
+          fi
+          if ! command -v llvm-ar &> /dev/null
+          then
+              echo "Error: llvm-ar not found after installation. Please check LLVM installation."
+              exit 1
+          fi
         
       - name: 初始化源码仓库
         run: |
