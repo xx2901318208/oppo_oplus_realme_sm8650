@@ -79,39 +79,35 @@ jobs:
           sudo ./llvm.sh 20 all
           sudo apt-get install llvm-20-tools -y
 
-          echo "Verifying LLVM tools installation and PATH..."
+          echo "Verifying LLVM tools installation and setting PATH for llvm-20..."
 
-          # 尝试查找 llvm-nm 的位置
-          # 常见的 LLVM 安装路径包括 /usr/bin, /usr/local/bin, /usr/lib/llvm-X/bin
-          LLVM_NM_PATH=$(find /usr -name llvm-nm-20 -o -name llvm-nm | head -n 1)
-          LLVM_AR_PATH=$(find /usr -name llvm-ar-20 -o -name llvm-ar | head -n 1)
+          # 明确查找 llvm-20 版本的工具
+          LLVM_20_BIN_DIR="/usr/lib/llvm-20/bin"
+          LLVM_NM_20_PATH="${LLVM_20_BIN_DIR}/llvm-nm"
+          LLVM_AR_20_PATH="${LLVM_20_BIN_DIR}/llvm-ar"
 
-          if [[ -z "$LLVM_NM_PATH" ]]; then
-            echo "Error: llvm-nm could not be found anywhere in /usr after installation."
+          # 检查 llvm-20 版本的工具是否存在
+          if [[ -f "$LLVM_NM_20_PATH" ]]; then
+            echo "Found llvm-nm-20 at: $LLVM_NM_20_PATH"
+            echo "Adding $LLVM_20_BIN_DIR to GITHUB_PATH with high priority"
+            # 将 llvm-20 的 bin 目录添加到 PATH 的最前面
+            echo "$LLVM_20_BIN_DIR" >> $GITHUB_PATH
+          else
+            echo "Error: llvm-nm-20 not found at expected path: $LLVM_NM_20_PATH"
             echo "Listing contents of /usr/lib/llvm-20/bin for debugging:"
-            ls -la /usr/lib/llvm-20/bin || true
+            ls -la "$LLVM_20_BIN_DIR" || true
             exit 1
-          else
-            echo "Found llvm-nm at: $LLVM_NM_PATH"
-            LLVM_BIN_DIR=$(dirname "$LLVM_NM_PATH")
-            echo "Adding $LLVM_BIN_DIR to GITHUB_PATH"
-            echo "$LLVM_BIN_DIR" >> $GITHUB_PATH
           fi
 
-          if [[ -z "$LLVM_AR_PATH" ]]; then
-            echo "Error: llvm-ar could not be found anywhere in /usr after installation."
-            exit 1
+          if [[ -f "$LLVM_AR_20_PATH" ]]; then
+            echo "Found llvm-ar-20 at: $LLVM_AR_20_PATH"
+            # llvm-ar-20 应该和 llvm-nm-20 在同一个目录，所以 PATH 已经设置
           else
-            echo "Found llvm-ar at: $LLVM_AR_PATH"
-            # 假设 llvm-ar 和 llvm-nm 在同一个目录下，如果上面已添加，这里无需重复
-            LLVM_AR_BIN_DIR=$(dirname "$LLVM_AR_PATH")
-            if [[ "$LLVM_BIN_DIR" != "$LLVM_AR_BIN_DIR" ]]; then
-                echo "Adding $LLVM_AR_BIN_DIR to GITHUB_PATH for llvm-ar"
-                echo "$LLVM_AR_BIN_DIR" >> $GITHUB_PATH
-            fi
+            echo "Error: llvm-ar-20 not found at expected path: $LLVM_AR_20_PATH"
+            exit 1
           fi
 
-          # 再次验证，此时应该能通过 command -v 找到
+          # 再次验证，此时应该能通过 command -v 找到 llvm-nm 和 llvm-ar，并且是 llvm-20 版本
           echo "Verifying llvm-nm and llvm-ar availability via command -v after PATH update..."
           if ! command -v llvm-nm &> /dev/null; then
               echo "Error: llvm-nm still not found via command -v even after attempting to update PATH."
@@ -119,6 +115,11 @@ jobs:
               exit 1
           else
               echo "llvm-nm is now available at: $(command -v llvm-nm)"
+              # 验证是否是 llvm-20 版本
+              if [[ "$(readlink -f $(command -v llvm-nm))" != "$LLVM_NM_20_PATH" ]]; then
+                  echo "Warning: llvm-nm found is not the expected llvm-20 version. Found: $(readlink -f $(command -v llvm-nm))"
+                  # 如果不是期望的版本，可能需要更强的措施，例如删除旧版本或使用 update-alternatives
+              fi
           fi
 
           if ! command -v llvm-ar &> /dev/null; then
@@ -127,6 +128,9 @@ jobs:
               exit 1
           else
               echo "llvm-ar is now available at: $(command -v llvm-ar)"
+              if [[ "$(readlink -f $(command -v llvm-ar))" != "$LLVM_AR_20_PATH" ]]; then
+                  echo "Warning: llvm-ar found is not the expected llvm-20 version. Found: $(readlink -f $(command -v llvm-ar))"
+              fi
           fi
         
       - name: 初始化源码仓库
