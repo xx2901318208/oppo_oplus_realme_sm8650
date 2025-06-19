@@ -109,7 +109,7 @@ jobs:
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
         
-      - name: Set up KernelSU-SukiSU Ultra
+ name: Set up KernelSU-SukiSU Ultra
         run: |
           cd kernel_workspace
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-dev
