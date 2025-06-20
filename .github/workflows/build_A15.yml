@@ -111,7 +111,11 @@ jobs:
           cd kernel_workspace/common
           cp ../SukiSU_patch/69_hide_stuff.patch ./
           patch -p1 < 69_hide_stuff.patch
-
+          curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/0001-lz4-v1.10.0.patch"
+          patch -p1 < 0001-lz4-v1.10.0.patch || true
+          curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/0001-zstd-v1.5.7.patch"
+          patch -p1 < 0001-zstd-v1.5.7.patch || true
+          cd ..
       - name: 应用 lz4k 补丁
         run: |
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
@@ -140,7 +144,7 @@ jobs:
           echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=n" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEFAULT_NET_SCH=fq" >> ./common/arch/arm64/configs/gki_defconfig
@@ -163,7 +167,7 @@ jobs:
           # Add rcu config setting
           echo "CONFIG_RCU_TRACE=n" >> ./common/arch/arm64/configs/gki_defconfig
           # Add ecn config setting
-          echo "CONFIG_IP_NF_TARGET_ECN=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
             echo "CONFIG_ZSMALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
