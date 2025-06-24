@@ -119,7 +119,7 @@ jobs:
 
       - name: Apply New Hooks Patches
         run: |
-          cd kernel_workspace/kernel_platform/common
+          cd kernel_workspace/common
           cp ../../SukiSU_patch/hooks/syscall_hooks.patch ./
           echo "正在打vfs补丁"
           patch -p1 -F 3 < syscall_hooks.patch
