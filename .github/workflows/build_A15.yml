@@ -8,7 +8,7 @@ env:
   KERNEL_VERSION: '6.1'
   KERNEL_NAME: '6.1.75-android14-11-o-ge2f97ae7184b'
   KERNELSU_VARIANT: 'SukiSU-Ultra'
-  KERNELSU_BRANCH: 'susfs-dev'
+  KERNELSU_BRANCH: 'susfs-main'
 
 on:
   workflow_dispatch:
@@ -83,7 +83,7 @@ jobs:
         run: |
           cd kernel_workspace
           #if [[ "${{ env.KERNELSU_VARIANT }}" == "SukiSU-Ultra" ]]; then
-          #  echo "BRANCH='-s susfs-dev'" >> $GITHUB_ENV
+          #  echo "BRANCH='-s susfs-main'" >> $GITHUB_ENV
           #fi
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
           cd ./KernelSU
@@ -103,9 +103,12 @@ jobs:
           cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
           cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
           cp ./SukiSU_patch/hooks/new_hooks.patch ./common/
+          cp ./SukiSU_patch/hooks/syscall_hooks.patch ./common/
+          
           cd ./common
           patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
           patch -p1 < new_hooks.patch
+          patch -p1 < syscall_hooks.patch
           
 
       - name: 应用 Hide Stuff 修补程序
@@ -134,9 +137,10 @@ jobs:
           cd kernel_workspace
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_WITH_KPROBES=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_KPROBES_HOOK=n" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
