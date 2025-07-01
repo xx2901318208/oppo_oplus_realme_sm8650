@@ -119,6 +119,24 @@ jobs:
           curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/0001-zstd-v1.5.7.patch"
           patch -p1 < 0001-zstd-v1.5.7.patch || true
           cd ..
+
+      - name: 修复 su_kps 符号
+        run: |
+          cd kernel_workspace/common
+          # 创建缺失的符号定义文件   
+          cat > drivers/kernelsu/sucompat_patch.h <<EOF
+          #ifndef _SUCOMPAT_PATCH_H_
+          #define _SUCOMPAT_PATCH_H_
+          #include <linux/kprobes.h>
+          static struct kprobe *su_kps[] = {
+          NULL, // 占位符，实际需要根据补丁设置       
+          };
+          #endi 
+          EOF
+          # 修改 sucompat.c 包含新头文件
+          sed -i '1i #include "sucompat_patch.h"' drivers/kernelsu/sucompat.c
+
+
       - name: 应用 lz4k 补丁
         run: |
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
