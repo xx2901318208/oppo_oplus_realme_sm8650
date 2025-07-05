@@ -253,7 +253,7 @@ jobs:
           
       - name: Apply patch_linux and replace Image
         run: |
-          cd kernel_workspace/common/out/arch/arm64/boot
+          cd kernel_workspace/common/out/arch/arm64/boot/
           curl -LO https://github.com/SukiSU-Ultra/SukiSU_KernelPatch_patch/releases/latest/download/patch_linux
           chmod +x patch_linux
           ./patch_linux
