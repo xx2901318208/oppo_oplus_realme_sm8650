@@ -6,7 +6,7 @@ env:
   FEIL: 'oppo+oplus+realme'
   ANDROID_VERSION: 'android14'
   KERNEL_VERSION: '6.1'
-  KERNEL_NAME: 'android14-11-o-gc88ee742fca6'
+  KERNEL_NAME: '6.1.75-android14-11-o-ge2f97ae7184b'
   KERNELSU_VARIANT: 'SukiSU-Ultra'
   KERNELSU_BRANCH: 'susfs-main'
 
@@ -36,7 +36,7 @@ on:
         description: '内核后缀(留空默认,开头别加连字符)'
         required: false
         type: string
-        default: 'android14-11-o-gc88ee742fca6'
+        default: '6.1.75-android14-11-o-ge2f97ae7184b'
 
 jobs:
   build:
@@ -129,6 +129,7 @@ jobs:
         run: |
           cd kernel_workspace
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -224,6 +225,15 @@ jobs:
           cd common
           make -j$(nproc --all) LLVM=-20 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang LD=ld.lld HOSTCC=clang HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
           echo "内核编译完成！"
+          
+      - name: 应用patch_linux并修补内核
+        run: |
+          cd kernel_workspace/common/out/arch/arm64/boot
+          curl -LO https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.12.0/patch_linux
+          chmod +x patch_linux
+          ./patch_linux
+          rm -f Image
+          mv oImage Image
           
       - name: 克隆 AnyKernel3 并打包
         run: |
