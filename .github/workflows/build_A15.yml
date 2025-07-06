@@ -113,6 +113,8 @@ jobs:
           patch -p1 < 0001-lz4-v1.10.0.patch || true
           curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/0001-zstd-v1.5.7.patch"
           patch -p1 < 0001-zstd-v1.5.7.patch || true
+          curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/lz4armv8.S"
+          patch -p1 < lz4armv8.S || true
           cd ..
       - name: 应用 lz4k 补丁
         run: |
