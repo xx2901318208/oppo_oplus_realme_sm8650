@@ -16,6 +16,14 @@ on:
 #  schedule:
 #    - cron: '0 23 * * *'  # UTC时间23点（北京时间次日7点）
     inputs:
+      hook_method:
+        description: hook模式(大部分情况manual即可，少数需切换sus su模式的场景才需要kprobes钩子)
+        required: true
+        type: choice
+        default: 'manual'
+        options:
+          - 'manual'
+          - 'kprobes'
       lz4k_enable:
         description: '是否安装 LZ4K 补丁'
         required: true
@@ -24,11 +32,36 @@ on:
         options:
           - 'true'
           - 'false'
-      scx_enable:
-        description: '是否安装风驰内核驱动'
+      lz4_enable:
+        description: '是否安装 lz4 + zstd 补丁'
         required: true
         type: choice
         default: 'true'
+        options:
+          - 'true'
+          - 'false'
+      bbr_enable:
+        description: "是否启用bbr算法(优化上行数据,对手机日用无太大意义甚至可能负优化;false关闭,true仅加入算法,default设为默认)"
+        required: true
+        type: choice
+        default: 'true'
+        options:
+          - 'false'
+          - 'true'
+          - 'default'
+      ssg_enable:
+        description: '是否启用三星SSG IO调度器'
+        required: true
+        type: choice
+        default: 'true'
+        options:
+          - 'true'
+          - 'false'
+      scx_enable:
+        description: '是否安装风驰内核驱动(未完成)'
+        required: true
+        type: choice
+        default: 'false'
         options:
           - 'true'
           - 'false'
@@ -101,45 +134,37 @@ jobs:
           git clone https://github.com/Xiaomichael/kernel_patches.git
           cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
           cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
-          cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/          
+          cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
           cp ./SukiSU_patch/hooks/syscall_hooks.patch ./common/
-          
           cd ./common
           patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
-          patch -p1 < syscall_hooks.patch
-          
+          patch -p1 < syscall_hooks.patch || true
 
-      - name: 应用 Hide Stuff 修补程序
+
+      - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
+        run: |
+          if [ "${{ github.event.inputs.lz4_enable }}" == "true" ]; then
+            echo "正在添加lz4 1.10.0 & zstd 1.5.7补丁…"
+            cd kernel_workspace
+            git clone https://github.com/cctv18/oppo_oplus_realme_sm8650.git
+            cp ./oppo_oplus_realme_sm8650/zram_patch/001-lz4.patch ./common/
+            cp ./oppo_oplus_realme_sm8650/zram_patch/lz4armv8.S ./common/lib
+            cp ./oppo_oplus_realme_sm8650/zram_patch/002-zstd.patch ./common/
+            cd ./common
+            git apply -p1 < 001-lz4.patch || true
+            patch -p1 < 002-zstd.patch || true
+          fi
+
+      - name: 应用 Hide Stuff 补丁
         run: |
           cd kernel_workspace/common
           cp ../SukiSU_patch/69_hide_stuff.patch ./
           patch -p1 < 69_hide_stuff.patch
-          curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/0001-lz4-v1.10.0.patch"
-          patch -p1 < 0001-lz4-v1.10.0.patch || true
-          curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/0001-zstd-v1.5.7.patch"
-          patch -p1 < 0001-zstd-v1.5.7.patch || true
-          cd ..
 
-      - name: 修复 su_kps 符号
-        run: |
-          cd kernel_workspace/common
-          # 创建缺失的符号定义文件   
-          cat > drivers/kernelsu/sucompat_patch.h <<EOF
-          #ifndef _SUCOMPAT_PATCH_H_
-          #define _SUCOMPAT_PATCH_H_
-          #include <linux/kprobes.h>
-          static struct kprobe *su_kps[] = {
-          NULL, // 占位符，实际需要根据补丁设置       
-          };
-          #endi 
-          EOF
-          # 修改 sucompat.c 包含新头文件
-          sed -i '1i #include "sucompat_patch.h"' drivers/kernelsu/sucompat.c
-
-
-      - name: 应用 lz4k 补丁
+      - name: 应用 lz4kd 补丁
         run: |
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
+            echo "正在添加lz4kd补丁…"
             cd kernel_workspace/common
             cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./include/linux/
             cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./lib
@@ -152,9 +177,17 @@ jobs:
         run: |
           cd kernel_workspace
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig    
-          echo "CONFIG_KSU_WITH_KPROBES=n" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          if [ "${{ github.event.inputs.hook_method }}" == "kprobes" ]; then
+            echo "正在开启kprobes钩子..."
+            echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_MANUAL_HOOK=n" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_KPROBES_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          else
+            echo "正在开启manual钩子..."
+            echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
+          fi
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -180,7 +213,11 @@ jobs:
           echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig 
           # Add bbr and fq config setting
-          echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/gki_defconfig
+          if [[ "${{ github.event.inputs.bbr_enable }}" == "true" || "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
+            echo "正在添加BBR等拥塞控制算法..."
+            cd kernel_workspace
+            #开启TCP拥塞控制算法控制器（必需）
+          echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/gki_defconfig        
           echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TCP_CONG_CUBIC=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TCP_CONG_VEGAS=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -191,18 +228,18 @@ jobs:
           echo "CONFIG_TCP_CONG_WESTWOOD=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TCP_CONG_HTCP=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEFAULT_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # BBR设为默认拥塞控制算法
-          echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./common/arch/arm64/configs/gki_defconfig
-          # 仅加入算法
-          # echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> ./common/arch/arm64/configs/gki_defconfig
-
           echo "CONFIG_NET_SCH_DEFAULT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEFAULT_FQ=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEFAULT_NET_SCH="fq"" >> ./common/arch/arm64/configs/gki_defconfig
-
-          # SSG IO 调度器
-          echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEFAULT_NET_SCH=fq" >> ./common/arch/arm64/configs/gki_defconfig
+          # BBR设为默认拥塞控制算法
+          echo "CONFIG_TCP_CONG_BRUTAL=y" >> ./common/arch/arm64/configs/gki_defconfig
+            if [ "${{ github.event.inputs.bbr_enable }}" == "default" ]; then
+              echo "正在将BBR设为默认拥塞控制算法..."
+              echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./common/arch/arm64/configs/gki_defconfig
+            else
+              echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> ./common/arch/arm64/configs/gki_defconfig
+            fi
+          fi       
           
           # Add rcu config setting
           echo "CONFIG_RCU_TRACE=n" >> ./common/arch/arm64/configs/gki_defconfig
@@ -234,7 +271,16 @@ jobs:
           ls -t | grep -E 'tcp_|sysctl_'
           #禁用 defconfig 检查
           sed -i 's/check_defconfig//' ./common/build.config.gki
-
+          
+      - name: 启用三星SSG IO调度器
+        run: |
+          if [[ "${{ github.event.inputs.ssg_enable }}" == "true" ]]; then
+            echo "正在启用三星SSG IO调度器…"
+            cd kernel_workspace
+            echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          fi
+          
       - name: 添加制作名称
         run: |
           cd kernel_workspace
