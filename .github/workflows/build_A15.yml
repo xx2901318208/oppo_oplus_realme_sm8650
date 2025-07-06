@@ -280,10 +280,22 @@ jobs:
           echo "配置完成后的 gki_defconfig 尾部:"
           tail -n 20 arch/arm64/configs/gki_defconfig
 
-      
-          # 禁用 defconfig 检查
-          cd ../../../
-          sed -i 's/check_defconfig//' build.config.gki
+      - name: Force ECN + Reduce overhead
+         if: ${{ env.KERNEL_VERSION == '6.1' || env.KERNEL_VERSION == '6.6' }}
+         run: |
+           cd kernel_workspace/common
+           echo "应用网络优化补丁..."
+           cd net/ipv4
+           sed -i 's/net->ipv4.sysctl_tcp_ecn = 2;/net->ipv4.sysctl_tcp_ecn = 1;/' tcp_ipv4.c
+           sed -i '/\.procname[[:space:]]*=[[:space:]]*"tcp_ecn"/, /^[[:space:]]*\}/ s/SYSCTL_TWO/SYSCTL_ONE/' sysctl_net_ipv4.c
+           sed -i 's/net->ipv4.sysctl_tcp_pacing_ss_ratio = 200;/net->ipv4.sysctl_tcp_pacing_ss_ratio = 150;/' tcp_ipv4.c
+           sed -i 's/net->ipv4.sysctl_tcp_pacing_ca_ratio = 120;/net->ipv4.sysctl_tcp_pacing_ca_ratio = 110;/' tcp_ipv4.c
+    
+            # 返回到 common 目录
+            cd ../..
+            # 禁用 defconfig 检查
+            sed -i 's/check_defconfig//' build.config.gki
+
 
       - name: 启用三星SSG IO调度器
         if: ${{ github.event.inputs.ssg_enable == 'true' }}
