@@ -282,7 +282,17 @@ jobs:
             cp -r ./sched_ext/* ./common/kernel/sched
           fi
           cd common
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang-20 LD=ld.lld HOSTCC=clang-20 HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
+          make -j$(nproc --all) LLVM=1 \
+          ARCH=arm64 \
+          CROSS_COMPILE=aarch64-linux-gnu- \
+          CROSS_COMPILE_ARM32=arm-linux-gnueabihf- \
+          CC="clang-20" \
+          LD="ld.lld-20" \
+          HOSTCC="clang-20" \
+          HOSTLD="ld.lld-20" \
+          O=out \
+          KCFLAGS="-Wno-error" \
+          gki_defconfig all
           echo "内核编译完成！"
           
       - name: 应用patch_linux并修补内核
