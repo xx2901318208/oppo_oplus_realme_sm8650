@@ -152,7 +152,7 @@ jobs:
           echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          
           # Add tethering config settings (moved out of lz4k_enable block and using set_config)
           echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -170,8 +170,7 @@ jobs:
           echo "CONFIG_TCP_CONG_HTCP=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEFAULT_NET_SCH=fq" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_NET_SCH=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEFAULT_FQ=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_NET_SCH=y" >> ./common/arch/arm64/configs/gki_defconfig       
           echo "CONFIG_TCP_CONG_VEGAS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TCP_CONG_BRUTAL=y" >> ./common/arch/arm64/configs/gki_defconfig
           # Add rcu config setting
@@ -194,8 +193,7 @@ jobs:
           echo "CONFIG_SCHED_SMT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SCHED_CLASS_EXT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SCHED_DEBUG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SCHED_CORE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_PREEMPT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SCHED_CORE=y" >> ./common/arch/arm64/configs/gki_defconfig          
           echo "CONFIG_PREEMPT_COUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_PREEMPTION=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_PREEMPT_DYNAMIC=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -284,7 +282,7 @@ jobs:
             cp -r ./sched_ext/* ./common/kernel/sched
           fi
           cd common
-          make -j$(nproc --all) LLVM=-20 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang LD=ld.lld HOSTCC=clang HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang-20 LD=ld.lld HOSTCC=clang-20 HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
           echo "内核编译完成！"
           
       - name: 应用patch_linux并修补内核
