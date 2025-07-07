@@ -181,13 +181,14 @@ jobs:
           echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
           # Add rcu config setting
           echo "CONFIG_RCU_TRACE=n" >> ./common/arch/arm64/configs/gki_defconfig
-          # 文件系统加速配置
-          echo "CONFIG_F2FS_FS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfigecho "CONFIG_F2FS_FS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # F2FS
+          echo "CONFIG_F2FS_FS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_F2FS_FS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_F2FS_FS_SECURITY=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_F2FS_FS_ENCRYPTION=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_F2FS_CHECK_FS=n" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_F2FS_FS_COMPRESSION=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 120Hz动态刷新率配置
+          # 120Hz
           echo "CONFIG_DRM_MSM_DSI_STAGING=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DRM_MSM_DSI_120HZ=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_QCOM_KGSL_120HZ_GPU_FREQ=y" >> ./common/arch/arm64/configs/gki_defconfigecho "CONFIG_QCOM_KGSL_DYNAMIC_FPS=y" >> ./common/arch/arm64/configs/gki_defconfig
