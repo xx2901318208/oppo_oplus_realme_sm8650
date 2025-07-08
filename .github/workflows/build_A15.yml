@@ -1,4 +1,4 @@
-name: 欧加真 Android 15 通用OKI内核
+name: 欧加真 Android 15 通用 OKI 内核
 
 env:
   TZ: Asia/Shanghai
@@ -12,9 +12,6 @@ env:
 
 on:
   workflow_dispatch:
-  # 取消此处注释代码可开启每日定时编译
-#  schedule:
-#    - cron: '0 23 * * *'  # UTC时间23点（北京时间次日7点）
     inputs:
       lz4k_enable:
         description: '是否安装 LZ4K 补丁'
@@ -37,6 +34,9 @@ on:
         required: false
         type: string
         default: 'android14-11-o-ge2f97ae7184b'
+  schedule:
+    - cron: '30 7 * * *'
+
 
 jobs:
   build:
@@ -185,9 +185,7 @@ jobs:
           # sched_ext配置相关          
           echo "CONFIG_SCHED_AUTOGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig          
           echo "CONFIG_SCHED_SMT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SCHED_CLASS_EXT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SCHED_DEBUG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SCHED_CORE=y" >> ./common/arch/arm64/configs/gki_defconfig                   
+          echo "CONFIG_SCHED_CLASS_EXT=y" >> ./common/arch/arm64/configs/gki_defconfig                                       
           echo "CONFIG_SLIM_SCHED=y" >> ./common/arch/arm64/configs/gki_defconfig                                        
           # SSG IO 调度器
           echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -201,11 +199,7 @@ jobs:
             echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
-            # 以下配置未核实必要性，待测试
-            #echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
-            #sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
-            #sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' ./common/arch/arm64/configs/gki_defconfig   
+            echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig         
           fi
           
       - name: Force ECN + Reduce overhead
