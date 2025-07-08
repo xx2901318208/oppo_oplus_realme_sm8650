@@ -171,9 +171,7 @@ jobs:
           echo "CONFIG_TCP_CONG_HTCP=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEFAULT_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
           # BBR设为默认拥塞控制算法
-          echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./common/arch/arm64/configs/gki_defconfig
-          # 仅加入算法
-          # echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./common/arch/arm64/configs/gki_defconfig    
           echo "CONFIG_NET_SCH_DEFAULT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEFAULT_FQ=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEFAULT_NET_SCH="fq"" >> ./common/arch/arm64/configs/gki_defconfig
@@ -186,8 +184,7 @@ jobs:
           echo "CONFIG_F2FS_FS_ENCRYPTION=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_F2FS_CHECK_FS=n" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_F2FS_FS_COMPRESSION=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 120Hz动态刷新率配置
-          echo "CONFIG_DRM_MSM_DSI_STAGING=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 120Hz动态刷新率配置       
           echo "CONFIG_DRM_MSM_DSI_120HZ=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_QCOM_KGSL_120HZ_GPU_FREQ=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_QCOM_KGSL_DYNAMIC_FPS=y" >> ./common/arch/arm64/configs/gki_defconfig
