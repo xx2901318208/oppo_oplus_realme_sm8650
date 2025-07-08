@@ -189,10 +189,7 @@ jobs:
           echo "CONFIG_QCOM_KGSL_120HZ_GPU_FREQ=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_QCOM_KGSL_DYNAMIC_FPS=y" >> ./common/arch/arm64/configs/gki_defconfig
           # sched_ext配置相关          
-          echo "CONFIG_SCHED_AUTOGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig          
-          echo "CONFIG_SCHED_SMT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SCHED_CLASS_EXT=y" >> ./common/arch/arm64/configs/gki_defconfig                                       
-          echo "CONFIG_SLIM_SCHED=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SCHED_CLASS_EXT=y" >> ./common/arch/arm64/configs/gki_defconfig                                            
           # SSG IO 调度器
           echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
