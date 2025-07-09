@@ -195,12 +195,7 @@ jobs:
           # SSG IO 调度器
           echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 风驰
-          echo "CONFIG_SCHED_AUTOGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig          
-          echo "CONFIG_SCHED_SMT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SCHED_CLASS_EXT=y" >> ./common/arch/arm64/configs/gki_defconfig          
-          echo "CONFIG_SCHED_CORE=y" >> ./common/arch/arm64/configs/gki_defconfig                   
-          echo "CONFIG_SLIM_SCHED=y" >> ./common/arch/arm64/configs/gki_defconfig
+          
           # Add ecn config setting
           echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
