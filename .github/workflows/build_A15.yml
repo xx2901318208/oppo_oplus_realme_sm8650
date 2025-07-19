@@ -188,7 +188,11 @@ jobs:
           # SSG IO 调度器
           echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          
+          # 添加TEE支持配置
+          echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_AMDTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
           # Add ecn config setting
           echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
