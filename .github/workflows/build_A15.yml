@@ -256,6 +256,7 @@ jobs:
           fi
           cd common
           make -j$(nproc --all) LLVM=-20 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang LD=ld.lld HOSTCC=clang HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
+          CMDLINE="androidboot.flash.locked=1 androidboot.verifiedbootstate=green $(cat arch/arm64/configs/gki_defconfig 2>/dev/null | grep -oP 'CONFIG_CMDLINE="\K[^"]+')"
           echo "内核编译完成！"              
       - name: 克隆 AnyKernel3 并打包
         run: |
