@@ -193,10 +193,10 @@ jobs:
           echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig      
           # 添加 DRM 和加密支持
-          echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM_SDE_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig          
+          # echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # echo "CONFIG_DRM_MSM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # echo "CONFIG_DRM_MSM_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # echo "CONFIG_DRM_MSM_SDE_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig          
           # Add ecn config setting
           echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
