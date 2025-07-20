@@ -193,6 +193,69 @@ jobs:
           echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_AMDTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 添加 TEE 框架支持
+          echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_AMDTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TRUSTY=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TRUSTY_LOG=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TRUSTY_VIRTIO=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TRUSTY_VIRTIO_IPC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TRUSTY_FIQ=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TRUSTY_FIQ_ARM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TRUSTY_FIQ_ARM64=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 添加 DRM 和加密支持
+          echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM_SDE_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_AES_ARM64_CE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SHA2_ARM64_CE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SHA256_ARM64=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SHA512_ARM64=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_AES_ARM64_BS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_AES_ARM64_CE_CCM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_AES_ARM64_CE_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_CHACHA20_NEON=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_POLY1305_NEON=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_NHPOLY1305_NEON=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 添加 Widevine 和 HDCP 支持
+          echo "CONFIG_QCOM_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_HDCP_2P2=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_HDCP_1P4=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_SECURE_BUFFER=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_MEMORY_DUMP_V2=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_MINIDUMP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 添加安全启动和验证启动支持
+          echo "CONFIG_SECURITY_SELINUX=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_AVC_STATS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS=9" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_SID2STR_CACHE_SIZE=256" >> ./common/arch/arm64/configs/gki_defconfig
+          # 添加 ARM TrustZone 支持
+          echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_PSCI=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_PSCI_FW=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_SCPI_PROTOCOL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_SCPI_POWER_DOMAIN=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 添加设备节点支持
+          echo "CONFIG_DEVTMPFS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS_SAFE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 添加 ION 内存管理器支持（DRM 内容保护需要）
+          echo "CONFIG_ION=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_SYSTEM_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_CARVEOUT_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_CHUNK_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_CMA_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 添加 CMA（连续内存分配器）支持
+          echo "CONFIG_CMA=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CMA_DEBUG=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CMA_DEBUGFS=n" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CMA_AREAS=7" >> ./common/arch/arm64/configs
           # Add ecn config setting
           echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
