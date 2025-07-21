@@ -189,14 +189,29 @@ jobs:
           echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 添加 TEE 框架支持
+          #echo "CONFIG_AMDTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig      
-          # 添加 DRM 和加密支持
-          # echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # echo "CONFIG_DRM_MSM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # echo "CONFIG_DRM_MSM_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # echo "CONFIG_DRM_MSM_SDE_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig          
+          # 添加
+          echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_AVC_STATS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS=9" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_SID2STR_CACHE_SIZE=256" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_PSCI=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_PSCI_FW=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_SCPI_PROTOCOL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_SCPI_POWER_DOMAIN=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS_SAFE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_SYSTEM_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_CARVEOUT_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_CHUNK_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_CMA_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig          
           # Add ecn config setting
           echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
