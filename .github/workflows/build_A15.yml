@@ -193,30 +193,16 @@ jobs:
           sed -i '/CONFIG_AMDTEE=y/d' ./common/arch/arm64/configs/gki_defconfig          
           # 移除OPTEE配置，避免与QSEE冲突
           sed -i '/CONFIG_OPTEE=y/d' ./common/arch/arm64/configs/gki_defconfig
-          # 添加TEE支持配置
-          if ! grep -q "CONFIG_TEE=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          if ! grep -q "CONFIG_OPTEE=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          if ! grep -q "CONFIG_QCOM_QSEECOM=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          # 添加ARM TrustZone支持
-          if ! grep -q "CONFIG_ARM_TRUSTZONE=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          # 添加DRM相关配置
-          if ! grep -q "CONFIG_DRM=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          if ! grep -q "CONFIG_DRM_MSM=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_DRM_MSM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          if ! grep -q "CONFIG_DRM_MSM_DPU=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_DRM_MSM_DPU=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi                
+          # 添加TEE支持配置       
+          echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig        
+          echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig          
+          # 添加ARM TrustZone支持          
+          echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig          
+          # 添加DRM相关配置          
+          echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM_DPU=y" >> ./common/arch/arm64/configs/gki_defconfig                        
           # 确保加密加速器正确
           sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE=.*/CONFIG_CRYPTO_AES_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/CONFIG_CRYPTO_SHA2_ARM64_CE=.*/CONFIG_CRYPTO_SHA2_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
