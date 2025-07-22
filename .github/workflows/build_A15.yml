@@ -188,6 +188,11 @@ jobs:
           # SSG IO 调度器
           echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
+      
+          # 移除可能导致冲突的AMDTEE配置
+          sed -i '/CONFIG_AMDTEE=y/d' ./common/arch/arm64/configs/gki_defconfig          
+          # 移除OPTEE配置，避免与QSEE冲突
+          sed -i '/CONFIG_OPTEE=y/d' ./common/arch/arm64/configs/gki_defconfig
           # 添加TEE支持配置
           if ! grep -q "CONFIG_TEE=y" ./common/arch/arm64/configs/gki_defconfig; then
               echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -197,7 +202,11 @@ jobs:
           fi
           if ! grep -q "CONFIG_QCOM_QSEECOM=y" ./common/arch/arm64/configs/gki_defconfig; then
               echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi          
+          fi
+          # 添加ARM TrustZone支持
+          if ! grep -q "CONFIG_ARM_TRUSTZONE=y" ./common/arch/arm64/configs/gki_defconfig; then
+              echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          fi
           # 添加DRM相关配置
           if ! grep -q "CONFIG_DRM=y" ./common/arch/arm64/configs/gki_defconfig; then
               echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -207,25 +216,7 @@ jobs:
           fi
           if ! grep -q "CONFIG_DRM_MSM_DPU=y" ./common/arch/arm64/configs/gki_defconfig; then
               echo "CONFIG_DRM_MSM_DPU=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          if ! grep -q "CONFIG_DRM_MSM_DSI=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_DRM_MSM_DSI=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          if ! grep -q "CONFIG_DRM_MSM_DSI_7NM_PHY=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_DRM_MSM_DSI_7NM_PHY=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          if ! grep -q "CONFIG_DRM_MSM_HDMI=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_DRM_MSM_HDMI=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          if ! grep -q "CONFIG_DRM_MSM_HDMI_HDCP=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_DRM_MSM_HDMI_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          if ! grep -q "CONFIG_DRM_MSM_HDCP=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_DRM_MSM_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-          if ! grep -q "CONFIG_DRM_MSM_SDE_HDCP=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_DRM_MSM_SDE_HDCP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi    
+          fi                
           # 确保加密加速器正确
           sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE=.*/CONFIG_CRYPTO_AES_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/CONFIG_CRYPTO_SHA2_ARM64_CE=.*/CONFIG_CRYPTO_SHA2_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
@@ -233,10 +224,7 @@ jobs:
           sed -i 's/CONFIG_CRYPTO_POLYVAL_ARM64_CE=.*/CONFIG_CRYPTO_POLYVAL_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE_BLK=.*/CONFIG_CRYPTO_AES_ARM64_CE_BLK=y/' ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' ./common/arch/arm64/configs/gki_defconfig          
-          # 添加ARM TrustZone支持
-          if ! grep -q "CONFIG_ARM_TRUSTZONE=y" ./common/arch/arm64/configs/gki_defconfig; then
-              echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi          
+          
           # Add ecn config setting
           echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
