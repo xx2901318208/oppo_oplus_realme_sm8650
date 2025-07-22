@@ -194,15 +194,33 @@ jobs:
           # 移除OPTEE配置，避免与QSEE冲突
           sed -i '/CONFIG_OPTEE=y/d' ./common/arch/arm64/configs/gki_defconfig
           # 添加TEE支持配置       
-          echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig        
-          echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig                  
           echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig          
           # 添加ARM TrustZone支持          
           echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig          
           # 添加DRM相关配置          
           echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DRM_MSM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM_DPU=y" >> ./common/arch/arm64/configs/gki_defconfig                        
+          echo "CONFIG_DRM_MSM_DPU=y" >> ./common/arch/arm64/configs/gki_defconfig 
+          # 
+          echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_AVC_STATS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS=9" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECURITY_SELINUX_SID2STR_CACHE_SIZE=256" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_PSCI=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_PSCI_FW=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_SCPI_PROTOCOL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_SCPI_POWER_DOMAIN=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEVTMPFS_SAFE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_SYSTEM_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_CARVEOUT_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_CHUNK_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ION_CMA_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig                    
           # 确保加密加速器正确
           sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE=.*/CONFIG_CRYPTO_AES_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/CONFIG_CRYPTO_SHA2_ARM64_CE=.*/CONFIG_CRYPTO_SHA2_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
