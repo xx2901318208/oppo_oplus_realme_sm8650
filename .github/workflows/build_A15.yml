@@ -199,9 +199,9 @@ jobs:
           # 添加ARM TrustZone支持          
           echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig          
           # 添加DRM相关配置          
-          echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM_DPU=y" >> ./common/arch/arm64/configs/gki_defconfig 
+          #echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_DRM_MSM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_DRM_MSM_DPU=y" >> ./common/arch/arm64/configs/gki_defconfig 
           # 
           echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
