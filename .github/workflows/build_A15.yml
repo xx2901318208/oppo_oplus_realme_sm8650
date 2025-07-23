@@ -188,7 +188,10 @@ jobs:
           # SSG IO 调度器
           echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
-      
+          #启用pstore
+          echo "CONFIG_PSTORE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_PSTORE_CONSOLE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_PSTORE_RAM=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 移除可能导致冲突的AMDTEE配置
            sed -i '/CONFIG_AMDTEE=y/d' ./common/arch/arm64/configs/gki_defconfig          
           # 移除OPTEE配置，避免与QSEE冲突
