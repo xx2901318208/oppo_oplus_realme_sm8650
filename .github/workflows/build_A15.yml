@@ -213,12 +213,11 @@ jobs:
           echo "CONFIG_DRM_MSM_DSI_PLL=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 启用高通平台的MDSS (Mobile Display Subsystem) 支持
           echo "CONFIG_DRM_MSM_MDSS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM_MDSS_DSI=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # --- 与电源、时钟和总线相关的关键依赖 ---
+          echo "CONFIG_DRM_MSM_MDSS_DSI=y" >> ./common/arch/arm64/configs/gki_defconfig       
           # 启用高通平台的互连总线 (Interconnect) 驱动
           echo "CONFIG_INTERCONNECT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_INTERCONNECT_QCOM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_INTERCONNECT_QCOM_SM8650=y" >> ./common/arch/arm64/configs/gki_defconfig # 针对sm8650平台的特定配置
+          echo "CONFIG_INTERCONNECT_QCOM_SM8650=y" >> ./common/arch/arm64/configs/gki_defconfig          
           # 启用高通平台的电源管理 (RPM) 和时钟控制
           echo "CONFIG_QCOM_RPM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_QCOM_RPM_SMD=y" >> ./common/arch/arm64/configs/gki_defconfig
