@@ -197,39 +197,12 @@ jobs:
           # 移除OPTEE配置，避免与QSEE冲突
            sed -i '/CONFIG_OPTEE=y/d' ./common/arch/arm64/configs/gki_defconfig
           # 添加TEE支持配置       
-          echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig                  
+          echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_AMDTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig          
           # 添加ARM TrustZone支持          
-          echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig          
-          # 添加DRM相关配置          
-          echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM_DPU=y" >> ./common/arch/arm64/configs/gki_defconfig         
-          # 启用DRM面板和桥接支持
-          echo "CONFIG_DRM_PANEL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_BRIDGE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 启用高通平台的DSI (Display Serial Interface) 控制器支持          
-          echo "CONFIG_DRM_MSM_DSI=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM_DSI_PLL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 启用高通平台的MDSS (Mobile Display Subsystem) 支持
-          echo "CONFIG_DRM_MSM_MDSS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM_MDSS_DSI=y" >> ./common/arch/arm64/configs/gki_defconfig       
-          # 启用高通平台的互连总线 (Interconnect) 驱动
-          echo "CONFIG_INTERCONNECT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_INTERCONNECT_QCOM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_INTERCONNECT_QCOM_SM8650=y" >> ./common/arch/arm64/configs/gki_defconfig          
-          # 启用高通平台的电源管理 (RPM) 和时钟控制
-          echo "CONFIG_QCOM_RPM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_QCOM_RPM_SMD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_QCOM_COMMAND_DB=y" >> ./common/arch/arm64/configs/gki_defconfig        
-          # 启用IOMMU支持，这对于现代DRM驱动至关重要
-          echo "CONFIG_IOMMU_SUPPORT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_SMMU_V3=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IOMMU_API=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_QCOM_IOMMU=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 确保Frame Buffer控制台被禁用，以避免与DRM冲突
-          sed -i '/CONFIG_FB_MSM_MDSS=y/d' ./common/arch/arm64/configs/gki_defconfig
-          # 
+          echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig                  
           echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SECURITY_SELINUX_AVC_STATS=y" >> ./common/arch/arm64/configs/gki_defconfig
