@@ -191,7 +191,23 @@ jobs:
           #启用pstore
           echo "CONFIG_PSTORE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_PSTORE_CONSOLE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_PSTORE_RAM=y" >> ./common/arch/arm64/configs/gki_defconfig       
+          echo "CONFIG_PSTORE_RAM=y" >> ./common/arch/arm64/configs/gki_defconfig 
+          # 启用 Adreno GPU 内核级性能计数器
+          echo "CONFIG_DRM_MSM_GPU_STAT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM_GPUFREQ=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 打开 Snapdragon 8 Gen3 的 SMMUv3 调试接口
+          echo "CONFIG_ARM_SMMU_V3=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_SMMU_V3_SVA=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 解串器 & 相机框架
+          echo "CONFIG_VIDEO_QCOM_CAMSS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_VIDEO_QCOM_CCI=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 高通摄像头时钟/电源域
+          echo "CONFIG_CAMSS_CLOCK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CAMSS_POWER=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 内核地址随机化增强
+          echo "CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 防止 ret2usr
+          echo "CONFIG_ARM64_SSBD=y" >> ./common/arch/arm64/configs/gki_defconfig
           #                  
           echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -234,6 +250,11 @@ jobs:
           echo "CONFIG_CRYPTO_SM4_ARM64_CE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_CRYPTO_SM4_ARM64_CE_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_CRYPTO_SM4_ARM64_NEON_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 内核 TLS 框架 + 国密算法套件
+          echo "CONFIG_TLS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TLS_DEVICE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM4_GCM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM4_CCM=y" >> ./common/arch/arm64/configs/gki_defconfig
           # ===== TEE / TrustZone / OP-TEE =====
           echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -241,8 +262,10 @@ jobs:
           echo "CONFIG_OPTEE_APDU=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig                 
-          # ===== 硬件安全引擎（保留高通即可） =====
+          # ===== 硬件安全引擎=====
           echo "CONFIG_CRYPTO_DEV_QCOM_RNG=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 支持 EEVDF 调度器
+          echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 确保加密加速器正确
           sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE=.*/CONFIG_CRYPTO_AES_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/CONFIG_CRYPTO_SHA2_ARM64_CE=.*/CONFIG_CRYPTO_SHA2_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
