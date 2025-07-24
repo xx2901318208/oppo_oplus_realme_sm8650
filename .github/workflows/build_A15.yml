@@ -195,8 +195,7 @@ jobs:
           echo "CONFIG_QCOM_KGSL_DYNAMIC_FPS=y" >> ./common/arch/arm64/configs/gki_defconfig
           # SSG IO 调度器
           echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
-        
+          echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig   
           #启用pstore
           echo "CONFIG_PSTORE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_PSTORE_CONSOLE=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -206,17 +205,12 @@ jobs:
           echo "CONFIG_BPF_JIT_ALWAYS_ON=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEBUG_INFO_BTF=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 启用 Adreno GPU 内核级性能计数器
-          echo "CONFIG_DRM_MSM_GPU_STAT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM_GPUFREQ=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 打开 Snapdragon 8 Gen3 的 SMMUv3 调试接口
-          echo "CONFIG_ARM_SMMU_V3=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_SMMU_V3_SVA=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM_GPU_STAT=y" >> ./common/arch/arm64/configs/gki_defconfig       
           # 解串器 & 相机框架
           echo "CONFIG_VIDEO_QCOM_CAMSS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_VIDEO_QCOM_CCI=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 高通摄像头时钟/电源域
-          echo "CONFIG_CAMSS_CLOCK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CAMSS_POWER=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CAMSS_CLOCK=y" >> ./common/arch/arm64/configs/gki_defconfig      
           # 内核地址随机化增强
           echo "CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 防止 ret2usr
@@ -285,8 +279,7 @@ jobs:
           sed -i 's/CONFIG_CRYPTO_SHA512_ARM64_CE=.*/CONFIG_CRYPTO_SHA512_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/CONFIG_CRYPTO_POLYVAL_ARM64_CE=.*/CONFIG_CRYPTO_POLYVAL_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE_BLK=.*/CONFIG_CRYPTO_AES_ARM64_CE_BLK=y/' ./common/arch/arm64/configs/gki_defconfig
-          sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' ./common/arch/arm64/configs/gki_defconfig          
-          
+          sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' ./common/arch/arm64/configs/gki_defconfig                   
           # Add ecn config setting
           echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
