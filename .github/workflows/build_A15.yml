@@ -202,16 +202,9 @@ jobs:
           echo "CONFIG_PSTORE_RAM=y" >> ./common/arch/arm64/configs/gki_defconfig 
           # ===== SCX 调度器框架 =====        
           echo "CONFIG_BPF_JIT_ALWAYS_ON=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEBUG_INFO_BTF=y" >> ./common/arch/arm64/configs/gki_defconfig       
-          # 解串器 & 相机框架
-          echo "CONFIG_VIDEO_QCOM_CAMSS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_VIDEO_QCOM_CCI=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 高通摄像头时钟/电源域
-          echo "CONFIG_CAMSS_CLOCK=y" >> ./common/arch/arm64/configs/gki_defconfig      
+          echo "CONFIG_DEBUG_INFO_BTF=y" >> ./common/arch/arm64/configs/gki_defconfig         
           # 内核地址随机化增强
-          echo "CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 防止 ret2usr
-          echo "CONFIG_ARM64_SSBD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y" >> ./common/arch/arm64/configs/gki_defconfig       
           #                  
           echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -292,15 +285,14 @@ jobs:
             echo "CONFIG_F2FS_FS_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_F2FS_FS_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_F2FS_FS_ZSTD=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KERNEL_LZ4=y" >> ./common/arch/arm64/configs/gki_defconfig
-            
+            echo "CONFIG_KERNEL_LZ4=y" >> ./common/arch/arm64/configs/gki_defconfig            
             # 以下配置未核实必要性，待测试
             #sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
             #sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' ./common/arch/arm64/configs/gki_defconfig   
           fi
           #禁用 defconfig 检查
           sed -i 's/check_defconfig//' ./common/build.config.gki
-          
+        
       - name: 启用网络功能增强优化配置
         run: |
           cd kernel_workspace
