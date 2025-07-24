@@ -204,6 +204,18 @@ jobs:
           #添加DRM支持
           echo "CONFIG_DRM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DRM_KMS_HELPER=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM_DPU=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM_DSI=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM_MDSS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DRM_MSM_DSI_PLL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 时钟框架
+          echo "CONFIG_COMMON_CLK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_CLK_SM8650=y" >> ./common/arch/arm64/configs/gki_defconfig # 确保是您芯片型号的特定时钟驱动
+          # 电源管理/稳压器
+          echo "CONFIG_REGULATOR=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_PMIC_SPMI=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_PMIC_REGULATOR=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 添加ARM TrustZone支持          
           echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig                  
           echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -295,7 +307,7 @@ jobs:
           fi
           cd common
           make -j$(nproc --all) LLVM=-20 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnuabeihf- CC=clang LD=ld.lld HOSTCC=clang HOSTLD=ld.lld O=out KCFLAGS+=-Wno-error gki_defconfig all
-          CMDLINE="androidboot.flash.locked=1 androidboot.verifiedbootstate=green $(cat arch/arm64/configs/gki_defconfig 2>/dev/null | grep -oP 'CONFIG_CMDLINE="\K[^"]+')"
+          CMDLINE="androidboot.flash.locked=1 androidboot.verifiedbootstate=green androidboot.keymaster=0 $(cat arch/arm64/configs/gki_defconfig 2>/dev/null | grep -oP 'CONFIG_CMDLINE="\K[^"]+')"
           echo "内核编译完成！"              
       - name: 克隆 AnyKernel3 并打包
         run: |
