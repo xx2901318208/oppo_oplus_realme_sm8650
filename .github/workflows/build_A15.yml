@@ -200,12 +200,9 @@ jobs:
           echo "CONFIG_PSTORE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_PSTORE_CONSOLE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_PSTORE_RAM=y" >> ./common/arch/arm64/configs/gki_defconfig 
-          # ===== SCX 调度器框架 =====
-          echo "CONFIG_SCHED_CLASS_EXT=y"  >> ./common/arch/arm64/configs/gki_defconfig
+          # ===== SCX 调度器框架 =====        
           echo "CONFIG_BPF_JIT_ALWAYS_ON=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEBUG_INFO_BTF=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 启用 Adreno GPU 内核级性能计数器
-          echo "CONFIG_DRM_MSM_GPU_STAT=y" >> ./common/arch/arm64/configs/gki_defconfig       
+          echo "CONFIG_DEBUG_INFO_BTF=y" >> ./common/arch/arm64/configs/gki_defconfig       
           # 解串器 & 相机框架
           echo "CONFIG_VIDEO_QCOM_CAMSS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_VIDEO_QCOM_CCI=y" >> ./common/arch/arm64/configs/gki_defconfig
