@@ -192,13 +192,7 @@ jobs:
           echo "CONFIG_PSTORE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_PSTORE_CONSOLE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_PSTORE_RAM=y" >> ./common/arch/arm64/configs/gki_defconfig       
-          # 添加TEE支持配置       
-          echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_AMDTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig      
-          # 添加ARM TrustZone支持          
-          echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig                  
+          #                  
           echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SECURITY_SELINUX_AVC_STATS=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -216,7 +210,39 @@ jobs:
           echo "CONFIG_ION_SYSTEM_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ION_CARVEOUT_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ION_CHUNK_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ION_CMA_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig                    
+          echo "CONFIG_ION_CMA_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig  
+          # ===== 密钥安全 & 完整性 =====
+          echo "CONFIG_TRUSTED_KEYS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ENCRYPTED_KEYS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IMA=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IMA_MEASURE_PCR_IDX=10" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IMA_LSM_RULES=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IMA_APPRAISE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IMA_ARCH_POLICY=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_EVM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_EVM_ATTR_FSUUID=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SECONDARY_TRUSTED_KEYRING=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # ===== 用户态算法接口 =====
+          echo "CONFIG_CRYPTO_USER_API_HASH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_USER_API_SKCIPHER=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_USER_API_AEAD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_USER_API_RNG=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # ===== 国密 & ECDSA =====
+          echo "CONFIG_CRYPTO_ECDSA=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM2=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM3_GENERIC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM4_ARM64_CE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM4_ARM64_CE_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM4_ARM64_NEON_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # ===== TEE / TrustZone / OP-TEE =====
+          echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_OPTEE_BENCHMARK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_OPTEE_APDU=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig                 
+          # ===== 硬件安全引擎（保留高通即可） =====
+          echo "CONFIG_CRYPTO_DEV_QCOM_RNG=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 确保加密加速器正确
           sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE=.*/CONFIG_CRYPTO_AES_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/CONFIG_CRYPTO_SHA2_ARM64_CE=.*/CONFIG_CRYPTO_SHA2_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
