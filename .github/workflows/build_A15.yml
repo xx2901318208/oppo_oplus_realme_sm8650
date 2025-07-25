@@ -254,7 +254,7 @@ jobs:
           # ===== 硬件安全引擎=====
           #echo "CONFIG_CRYPTO_DEV_QCOM_RNG=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 支持 EEVDF 调度器
-          #echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 确保加密加速器正确
           sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE=.*/CONFIG_CRYPTO_AES_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
           sed -i 's/CONFIG_CRYPTO_SHA2_ARM64_CE=.*/CONFIG_CRYPTO_SHA2_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
