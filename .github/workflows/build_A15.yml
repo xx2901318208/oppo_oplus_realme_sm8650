@@ -226,13 +226,11 @@ jobs:
           echo "CONFIG_ION_CMA_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig  
           # ===== 密钥安全 & 完整性 =====
           echo "CONFIG_TRUSTED_KEYS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ENCRYPTED_KEYS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IMA=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_ENCRYPTED_KEYS=y" >> ./common/arch/arm64/configs/gki_defconfig    
           echo "CONFIG_IMA_MEASURE_PCR_IDX=10" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_IMA_LSM_RULES=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_IMA_APPRAISE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IMA_ARCH_POLICY=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_EVM=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IMA_ARCH_POLICY=y" >> ./common/arch/arm64/configs/gki_defconfig          
           echo "CONFIG_EVM_ATTR_FSUUID=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SECONDARY_TRUSTED_KEYRING=y" >> ./common/arch/arm64/configs/gki_defconfig
           # ===== 用户态算法接口 =====
