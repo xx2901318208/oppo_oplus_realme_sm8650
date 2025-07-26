@@ -194,7 +194,8 @@ jobs:
           # SSG IO 调度器
           echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig             
-          # ===== SCX 调度器框架 =====        
+          # ===== SCX 调度器框架 =====
+          echo "CONFIG_SCHED_CLASS_EXT=y"  >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_BPF_JIT_ALWAYS_ON=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEBUG_INFO_BTF=y" >> ./common/arch/arm64/configs/gki_defconfig         
           # 内核地址随机化增强
