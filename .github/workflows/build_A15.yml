@@ -224,19 +224,19 @@ jobs:
           #echo "CONFIG_ENCRYPTED_KEYS=y" >> ./common/arch/arm64/configs/gki_defconfig            
           #echo "CONFIG_SECONDARY_TRUSTED_KEYRING=y" >> ./common/arch/arm64/configs/gki_defconfig
           # ===== 用户态算法接口 =====
-          #echo "CONFIG_CRYPTO_USER_API_HASH=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_USER_API_SKCIPHER=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_USER_API_AEAD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_USER_API_RNG=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_USER_API_HASH=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_USER_API_SKCIPHER=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_USER_API_AEAD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_USER_API_RNG=y" >> ./common/arch/arm64/configs/gki_defconfig
           # ===== 国密 & ECDSA =====
-          #echo "CONFIG_CRYPTO_ECDSA=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_SM2=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_SM3_GENERIC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_SM4_ARM64_CE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_SM4_ARM64_CE_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          #echo "CONFIG_CRYPTO_SM4_ARM64_NEON_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_ECDSA=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM2=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM3_GENERIC=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM4_ARM64_CE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM4_ARM64_CE_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_CRYPTO_SM4_ARM64_NEON_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 内核 TLS 框架 + 国密算法套件
-          echo "CONFIG_TLS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_TLS=y" >> ./common/arch/arm64/configs/gki_defconfig
           # ===== TEE / TrustZone / OP-TEE =====
           echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
