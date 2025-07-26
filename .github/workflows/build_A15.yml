@@ -237,9 +237,6 @@ jobs:
           #echo "CONFIG_CRYPTO_SM4_ARM64_NEON_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 内核 TLS 框架 + 国密算法套件
           echo "CONFIG_TLS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TLS_DEVICE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM4_GCM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM4_CCM=y" >> ./common/arch/arm64/configs/gki_defconfig
           # ===== TEE / TrustZone / OP-TEE =====
           echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
