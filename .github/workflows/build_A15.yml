@@ -200,7 +200,7 @@ jobs:
           echo "CONFIG_DEBUG_INFO_BTF=y" >> ./common/arch/arm64/configs/gki_defconfig         
           # 内核地址随机化增强
           echo "CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y" >> ./common/arch/arm64/configs/gki_defconfig       
-          #                  
+          # SELinux 安全增强 设备能耗管理                
           echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_SECURITY_SELINUX_AVC_STATS=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -220,9 +220,9 @@ jobs:
           echo "CONFIG_ION_CHUNK_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_ION_CMA_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig  
           # ===== 密钥安全 & 完整性 =====
-          echo "CONFIG_TRUSTED_KEYS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ENCRYPTED_KEYS=y" >> ./common/arch/arm64/configs/gki_defconfig            
-          echo "CONFIG_SECONDARY_TRUSTED_KEYRING=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_TRUSTED_KEYS=y" >> ./common/arch/arm64/configs/gki_defconfig
+          #echo "CONFIG_ENCRYPTED_KEYS=y" >> ./common/arch/arm64/configs/gki_defconfig            
+          #echo "CONFIG_SECONDARY_TRUSTED_KEYRING=y" >> ./common/arch/arm64/configs/gki_defconfig
           # ===== 用户态算法接口 =====
           #echo "CONFIG_CRYPTO_USER_API_HASH=y" >> ./common/arch/arm64/configs/gki_defconfig
           #echo "CONFIG_CRYPTO_USER_API_SKCIPHER=y" >> ./common/arch/arm64/configs/gki_defconfig
