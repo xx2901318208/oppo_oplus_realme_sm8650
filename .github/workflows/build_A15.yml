@@ -75,7 +75,7 @@ jobs:
         run: |
           rm -rf kernel_workspace && mkdir kernel_workspace && cd kernel_workspace
           echo "正在克隆源码仓库..."
-          git clone --depth=1 https://github.com/oppo-source/android_kernel_common_oppo_sm8650.git -b oppo/sm8650_v_15.0.0_find_x7_ultra_6.1.118 common
+          git clone --depth=1 https://github.com/oppo-source/android_kernel_common_oppo_sm8650.git -b oppo/sm8650_v_15.0.0_find_x7_ultra common
           echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
