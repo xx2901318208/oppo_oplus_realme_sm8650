@@ -34,7 +34,7 @@ on:
           - 'kprobes'
       kpm_enable:
         description: '是否开启kpm(仅对sukisu生效;可能轻微增加耗电，不需要可关闭)'
-        required: false   
+        required: true   
         type: choice
         default: 'false'
         options:
@@ -59,6 +59,14 @@ on:
           - 'false'
           - 'true'
           - 'default'
+      scx_enable:
+        description: '是否安装风驰内核驱动'
+        required: true
+        type: choice
+        default: 'flase'
+        options:
+          - 'true'
+          - 'false'
       better_net:
         description: '是否开启网络功能增强优化配置(优化代理连接,IPV6等功能)'
         required: true
@@ -71,12 +79,13 @@ on:
         description: '是否启用三星SSG IO调度器及Re-Kernel支持(0=均不安装,1=安装SSG IO调度器,2=安装Re-Kernel,3=均安装,默认1)'
         required: true
         type: choice
-        default: '3'
+        default: '4'
         options:
           - '0'
           - '1'
           - '2'
           - '3'
+          - '4'
       kernel_suffix:
         description: '内核后缀(留空默认,开头别加连字符,勿加空格等影响指令运行的保留字符)'
         required: true
@@ -289,6 +298,7 @@ jobs:
             patch -p1 < 0001-zstd-v1.5.7.patch || true
             curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/lz4armv8.S"
             patch -p1 < lz4armv8.S || true     
+            cd ..
           fi
 
       - name: 应用 lz4kd 补丁
@@ -375,8 +385,7 @@ jobs:
           echo "CONFIG_SCHED_CLASS_EXT=y"  >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_BPF_JIT_ALWAYS_ON=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_DEBUG_INFO_BTF=y" >> ./common/arch/arm64/configs/gki_defconfig  
-          # 支持 EEVDF 调度器
-          echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
+          
           # 内核地址随机化增强
           echo "CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y" >> ./common/arch/arm64/configs/gki_defconfig       
           # SELinux 安全增强 设备能耗管理                
@@ -511,7 +520,7 @@ jobs:
 
       - name: 启用三星SSG IO调度器
         run: |
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "1" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
+          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "1" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "4" ]]; then
             echo "正在启用三星SSG IO调度器(一加12等极少数机型开启后可能不开机,若出现bug请关闭此项)…"
             cd kernel_workspace
             echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -520,12 +529,20 @@ jobs:
 
       - name: 启用Re-Kernel支持
         run: |
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "2" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
+          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "2" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "4" ]]; then
             echo "正在启用Re-Kernel支持(用于与Freezer,NoActive等软件配合使用,提升冻结后台能力)…"
             cd kernel_workspace
             echo "CONFIG_REKERNEL=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
-
+      
+          
+      - name: 启用 EEVDF 调度器
+        run: |
+          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "4" ]]; then
+            echo "正在启用EEVDF支持"
+            cd kernel_workspace
+            echo "echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
+          fi
       - name: 添加制作名称
         run: |
           cd kernel_workspace
