@@ -63,7 +63,7 @@ on:
         description: '是否安装风驰内核驱动'
         required: true
         type: choice
-        default: 'flase'
+        default: 'false'
         options:
           - 'true'
           - 'false'
@@ -76,7 +76,7 @@ on:
           - 'true'
           - 'false'
       ssg_rekernel_enable:
-        description: '是否启用三星SSG IO调度器及Re-Kernel支持(0=均不安装,1=安装SSG IO调度器,2=安装Re-Kernel,3=均安装,默认1)'
+        description: '是否启用三星SSG IO调度器及Re-Kernel支持(0=均不安装,1=安装SSG IO调度器,2=安装Re-Kernel,3=安装EEVDF,4=均安装,默认1)'
         required: true
         type: choice
         default: '4'
@@ -541,7 +541,7 @@ jobs:
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "4" ]]; then
             echo "正在启用EEVDF支持"
             cd kernel_workspace
-            echo "echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
       - name: 添加制作名称
         run: |
