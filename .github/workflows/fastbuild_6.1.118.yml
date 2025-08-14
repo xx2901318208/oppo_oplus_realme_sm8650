@@ -41,15 +41,13 @@ on:
           - 'true'
           - 'false'
       lz4_enable:
-        description: '是否安装 lz4 1.10.0+zstd 1.5.7 补丁及 LZ4KD 补丁(0=均不安装,1=安装lz4&zstd补丁,2=安装lz4kd补丁,3=均安装,默认1)'
+        description: '是否安装 lz4 1.10.0+zstd 1.5.7 补丁及 LZ4KD 补丁'
         required: true
         type: choice
-        default: '3'
+        default: 'true'
         options:
-          - '0'
-          - '1'
-          - '2'
-          - '3'
+          - 'true'
+          - 'false'
       bbr_enable:
         description: "是否启用bbr算法(优化上行数据,对手机日用无太大意义甚至可能负优化;false关闭,true仅加入算法,default设为默认)"
         required: true
@@ -290,7 +288,7 @@ jobs:
           
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
         run: |
-          if [[ "${{ github.event.inputs.lz4_enable }}" == "1" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
+          if [[ "${{ github.event.inputs.lz4_enable }}" == "true" ]]; then
             echo "正在添加lz4 1.10.0 & zstd 1.5.7补丁…"
             cd kernel_workspace/common
             curl -LSs --remote-name "https://raw.githubusercontent.com/xx2901318208/gt5pro_kernel_manifest/realme/sm8650/patches/0001-lz4-v1.10.0.patch"
@@ -304,7 +302,7 @@ jobs:
 
       - name: 应用 lz4kd 补丁
         run: |
-          if [[ "${{ github.event.inputs.lz4_enable }}" == "2" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
+          if [[ "${{ github.event.inputs.lz4_enable }}" == "true" ]]; then
             echo "正在添加lz4kd补丁…"
             cd kernel_workspace/common
             cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./include/linux/
@@ -359,8 +357,7 @@ jobs:
             echo "CONFIG_F2FS_FS_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_F2FS_FS_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_F2FS_FS_ZSTD=y" >> ./common/arch/arm64/configs/gki_defconfig
-            # 以下配置未核实必要性，待测试
-            #echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
+            # 以下配置未核实必要性，待测试            
             #sed -i 's/CONFIG_ZRAM=m/CONFIG_ZRAM=y/g' ./common/arch/arm64/configs/gki_defconfig
             #sed -i 's/CONFIG_MODULE_SIG=y/CONFIG_MODULE_SIG=n/g' ./common/arch/arm64/configs/gki_defconfig
           fi
