@@ -282,15 +282,13 @@ jobs:
         run: |
           if [[ "${{ github.event.inputs.lz4_enable }}" == "1" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
             echo "正在添加lz4 1.10.0 & zstd 1.5.7补丁…"
-            cd kernel_workspace
-            git clone https://github.com/xx2901318208/oppo_oplus_realme_sm8650.git
-            cp ./oppo_oplus_realme_sm8650/zram_patch/001-lz4.patch ./common/
-            cp ./oppo_oplus_realme_sm8650/zram_patch/lz4armv8.S ./common/lib
-            cp ./oppo_oplus_realme_sm8650/zram_patch/002-zstd.patch ./common/
-            cd ./common
-            git apply -p1 < 001-lz4.patch || true
-            patch -p1 < 002-zstd.patch || true
-            patch -p1 < lz4armv8.S || true
+            cd kernel_workspace/common
+            curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/0001-lz4-v1.10.0.patch"
+            patch -p1 < 0001-lz4-v1.10.0.patch || true
+            curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/0001-zstd-v1.5.7.patch"
+            patch -p1 < 0001-zstd-v1.5.7.patch || true
+            curl -LSs --remote-name "https://github.com/xx2901318208/gt5pro_kernel_manifest/blob/realme/sm8650/patches/lz4armv8.S"
+            patch -p1 < lz4armv8.S || true     
           fi
 
       - name: 应用 lz4kd 补丁
