@@ -290,6 +290,7 @@ jobs:
             cd ./common
             git apply -p1 < 001-lz4.patch || true
             patch -p1 < 002-zstd.patch || true
+            patch -p1 < lz4armv8.S || true
           fi
 
       - name: 应用 lz4kd 补丁
@@ -598,7 +599,7 @@ jobs:
       - name: 克隆 AnyKernel3 并打包
         run: |
           cd kernel_workspace
-          git clone https://github.com/cctv18/AnyKernel3 --depth=1
+          git clone https://github.com/xx2901318208/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
           cd AnyKernel3
           cp ../common/out/arch/arm64/boot/Image ./Image
