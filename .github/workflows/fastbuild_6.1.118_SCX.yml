@@ -528,6 +528,11 @@ jobs:
             cp -r ./sched_ext/* ./common/kernel/sched
             rm -rf ./sched_ext/.git
             cd common/kernel/sched
+            DEFCONFIG=../../arch/arm64/configs/gki_defconfig
+            if [[ ! -f "$DEFCONFIG" ]]; then
+              echo "错误：未找到 $DEFCONFIG"
+              exit 1
+            fi
             [ -f Kconfig ] || touch Kconfig
             if ! grep -q SCHED_CLASS_EXT Kconfig; then
               echo "config SCHED_CLASS_EXT" >> Kconfig
@@ -538,10 +543,9 @@ jobs:
             fi
             grep -q hmbird_sched_proc_main.o Makefile || \
               echo 'obj-$(CONFIG_SCHED_CLASS_EXT) += hmbird_sched_proc_main.o slim_sysctl.o' >> Makefile
-            DEFCONFIG=../arch/arm64/configs/gki_defconfig
             grep -q CONFIG_SCHED_CLASS_EXT "$DEFCONFIG" || echo 'CONFIG_SCHED_CLASS_EXT=y' >> "$DEFCONFIG"
           fi
-          cd common
+          cd ../../common
           sudo rm -rf /usr/share/dotnet &
           sudo rm -rf /usr/local/lib/android &
           sudo rm -rf /opt/ghc &
