@@ -522,6 +522,10 @@ jobs:
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="3G"
           cd kernel_workspace
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            exit 1
+          fi
           if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
             echo "正在集成SCX调度器…"
             git clone https://github.com/HanKuCha/sched_ext.git
@@ -544,8 +548,13 @@ jobs:
             grep -q hmbird_sched_proc_main.o Makefile || \
               echo 'obj-$(CONFIG_SCHED_CLASS_EXT) += hmbird_sched_proc_main.o slim_sysctl.o' >> Makefile
             grep -q CONFIG_SCHED_CLASS_EXT "$DEFCONFIG" || echo 'CONFIG_SCHED_CLASS_EXT=y' >> "$DEFCONFIG"
+            cd ../..
           fi
-          cd ../../common
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            exit 1
+          fi
+          cd common
           sudo rm -rf /usr/share/dotnet &
           sudo rm -rf /usr/local/lib/android &
           sudo rm -rf /opt/ghc &
