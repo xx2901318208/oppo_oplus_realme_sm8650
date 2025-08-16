@@ -641,32 +641,21 @@ jobs:
           echo "Clang版本: $CLANG_VERSION"
           echo "LLD版本: $LLD_VERSION"
           pahole_version=$(pahole --version 2>/dev/null | head -n1); [ -z "$pahole_version" ] && echo "pahole版本：未安装" || echo "pahole版本：$pahole_version"
+          
           export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
           export CCACHE_NOHASHDIR="true"
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="3G"
-          cd kernel_workspace/common
-          if [[ ! -d "common" ]]; then
-            echo "错误：未找到 kernel_workspace/common 目录"
-            ls -l
-            exit 1
-          fi
+          
+          cd kernel_workspace
           if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
-            echo "正在集成SCX调度器…"
-            echo "Git版本: $(git --version)"
-            for i in {1..3}; do
-              git clone https://github.com/HanKuCha/sched_ext.git && break || { echo "克隆失败，第 $i 次尝试"; sleep 5; }
-            done
-            if [[ ! -d "sched_ext" ]]; then
-              echo "错误：克隆 sched_ext 仓库失败"
-              ls -l
-              exit 1
-            fi
-            echo "sched_ext 目录内容："
-            ls -l sched_ext
-            cp -r ./sched_ext/* ./common/kernel/sched
+            git clone https://github.com/cctv18/sched_ext.git
             rm -rf ./sched_ext/.git
+            rm -rf ./sched_ext/README.md
+            cp -r ./sched_ext/* ./common/kernel/sched
+          fi
+            cd common
             cd kernel_workspace/common/kernel/sched
             DEFCONFIG=../../arch/arm64/configs/gki_defconfig
             if [[ ! -f "$DEFCONFIG" ]]; then
