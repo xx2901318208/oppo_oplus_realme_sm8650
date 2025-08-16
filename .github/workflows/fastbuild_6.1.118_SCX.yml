@@ -646,7 +646,7 @@ jobs:
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="3G"
-          cd kernel_workspace
+          cd kernel_workspace/common
           if [[ ! -d "common" ]]; then
             echo "错误：未找到 kernel_workspace/common 目录"
             ls -l
@@ -667,7 +667,7 @@ jobs:
             ls -l sched_ext
             cp -r ./sched_ext/* ./common/kernel/sched
             rm -rf ./sched_ext/.git
-            cd common/kernel/sched
+            cd kernel_workspace/common/kernel/sched
             DEFCONFIG=../../arch/arm64/configs/gki_defconfig
             if [[ ! -f "$DEFCONFIG" ]]; then
               echo "错误：未找到 $DEFCONFIG"
@@ -687,7 +687,7 @@ jobs:
             grep -q CONFIG_SCHED_CLASS_EXT "$DEFCONFIG" || echo 'CONFIG_SCHED_CLASS_EXT=y' >> "$DEFCONFIG"
             cd ../..
           fi
-          cd common
+          cd kernel_workspace/common
           sudo rm -rf /usr/share/dotnet &
           sudo rm -rf /usr/local/lib/android &
           sudo rm -rf /opt/ghc &
@@ -721,7 +721,7 @@ jobs:
 
       - name: 应用KPM并修补内核
         run: |
-          cd kernel_workspace
+          cd kernel_workspace/common
           if [[ ! -d "common" ]]; then
             echo "错误：未找到 kernel_workspace/common 目录"
             ls -l
