@@ -569,7 +569,16 @@ jobs:
           fi
           if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
             echo "正在集成SCX调度器…"
-            git clone --retry 3 https://github.com/HanKuCha/sched_ext.git
+            echo "Git版本: $(git --version)"
+            for i in {1..3}; do
+              git clone https://github.com/HanKuCha/sched_ext.git && break || { echo "克隆失败，第 $i 次尝试"; sleep 5; }
+            done
+            if [[ ! -d "sched_ext" ]]; then
+              echo "错误：克隆 sched_ext 仓库失败"
+              exit 1
+            fi
+            echo "sched_ext 目录内容："
+            ls -l sched_ext
             cp -r ./sched_ext/* ./common/kernel/sched
             rm -rf ./sched_ext/.git
             cd common/kernel/sched
