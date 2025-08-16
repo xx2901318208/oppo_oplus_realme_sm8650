@@ -15,7 +15,7 @@ on:
   # 取消此处注释代码可开启每日定时编译
 #  schedule:
 #    - cron: '0 23 * * *'  # UTC时间23点（北京时间次日7点）
-  inputs:
+   inputs:
     ksu_type:
       description: 'KernelSU分支(SukiSU Ultra/KernelSU Next,默认SukiSU Ultra)'
       required: true
@@ -162,18 +162,6 @@ jobs:
           rm -rf clang.zip
           echo "正在克隆构建工具..."
           rm -rf build-tools
-          aria2c -s16 -x16 -k1M https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang20-r547379/build-tools.zip -          aria2c -s16 -x16 -k1M https://github.com/cctv18/android_kernel_common_oneplus_sm8650/archive/refs/heads/oneplus/sm8650_v_15.0.0_oneplus12_6.1.118.zip -o common.zip
-          unzip -q common.zip
-          mv "android_kernel_common_oneplus_sm8650-oneplus-sm8650_v_15.0.0_oneplus12_6.1.118" common
-          rm -rf common.zip
-          echo "正在克隆llvm-Clang20工具链..."
-          rm -rf clang20
-          mkdir -p clang20
-          aria2c -s16 -x16 -k1M https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang20-r547379/clang-r547379.zip -o clang.zip
-          unzip -q clang.zip -d clang20
-          rm -rf clang.zip
-          echo "正在克隆构建工具..."
-          rm -rf build-tools
           aria2c -s16 -x16 -k1M https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang20-r547379/build-tools.zip -o build-tools.zip
           unzip -q build-tools.zip
           rm -rf build-tools.zip
@@ -279,10 +267,10 @@ jobs:
           if [[ "${{ github.event.inputs.lz4_enable }}" == "true" ]]; then
             echo "正在添加lz4kd补丁（包括LZ4K OPlus变体）…"
             cd kernel_workspace/common
-            cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./include/linux/
-            cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./lib/
-            cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./crypto/
-            cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./lib/  # 添加OPlus变体（如果仓库有）
+            cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./include/linux/ || true
+            cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./lib/ || true
+            cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./crypto/ || true
+            cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./lib/ || true
             PATCH_LIST=(
               "lz4kd"
               "lz4k_oplus"
@@ -302,138 +290,148 @@ jobs:
       - name: 添加 KSU & SUSFS 配置项
         run: |
           cd kernel_workspace
-          echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
+          DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
+          if [[ ! -f "$DEFCONFIG" ]]; then
+            echo "错误：未找到 $DEFCONFIG"
+            exit 1
+          fi
+          echo "CONFIG_KSU=y" >> "$DEFCONFIG"
           if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
-            echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KPM=y" >> "$DEFCONFIG"
           fi
           if [ "${{ github.event.inputs.hook_method }}" == "kprobes" ]; then
             echo "正在开启kprobes钩子..."
-            echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_MANUAL_HOOK=n" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_KPROBES_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> "$DEFCONFIG"
+            echo "CONFIG_KSU_MANUAL_HOOK=n" >> "$DEFCONFIG"
+            echo "CONFIG_KSU_KPROBES_HOOK=y" >> "$DEFCONFIG"
           else
             echo "正在开启manual钩子..."
-            echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$DEFCONFIG"
+            echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> "$DEFCONFIG"
           fi
-          echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS_AUTO_KSTAT_SUPPORT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=n" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_KSU_SUSFS=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS_AUTO_KSTAT_SUPPORT=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=n" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> "$DEFCONFIG"
+          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> "$DEFCONFIG"
           if [[ "${{ github.event.inputs.lz4_enable }}" == "true" ]]; then
-            echo "CONFIG_ZSMALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ZRAM_WRITEBACK=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_COMPRESSION=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_LZ4=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_ZSTD=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_ZSMALLOC=y" >> "$DEFCONFIG"
+            echo "CONFIG_CRYPTO_LZ4HC=y" >> "$DEFCONFIG"
+            echo "CONFIG_CRYPTO_LZ4K=y" >> "$DEFCONFIG"
+            echo "CONFIG_CRYPTO_LZ4KD=y" >> "$DEFCONFIG"
+            echo "CONFIG_CRYPTO_842=y" >> "$DEFCONFIG"
+            echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> "$DEFCONFIG"
+            echo "CONFIG_ZRAM_WRITEBACK=y" >> "$DEFCONFIG"
+            echo "CONFIG_F2FS_FS_COMPRESSION=y" >> "$DEFCONFIG"
+            echo "CONFIG_F2FS_FS_LZ4=y" >> "$DEFCONFIG"
+            echo "CONFIG_F2FS_FS_LZ4HC=y" >> "$DEFCONFIG"
+            echo "CONFIG_F2FS_FS_LZ4KD=y" >> "$DEFCONFIG"
+            echo "CONFIG_F2FS_FS_ZSTD=y" >> "$DEFCONFIG"
           fi
-          echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TCP_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IPV6_ECN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TMPFS_XATTR=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_RCU_TRACE=n" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM_DSI_165HZ=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_QCOM_KGSL_165HZ_GPU_FREQ=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_QCOM_KGSL_DYNAMIC_FPS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SCHED_CLASS_EXT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_BPF_JIT_ALWAYS_ON=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEBUG_INFO_BTF=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_AVC_STATS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS=9" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_SID2STR_CACHE_SIZE=256" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_PSCI=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_PSCI_FW=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_SCPI_PROTOCOL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_SCPI_POWER_DOMAIN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEVTMPFS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEVTMPFS_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEVTMPFS_SAFE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ION=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ION_SYSTEM_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ION_CARVEOUT_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ION_CHUNK_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ION_CMA_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_USER_API_HASH=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_USER_API_SKCIPHER=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_USER_API_AEAD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_USER_API_RNG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_ECDSA=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM2=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM3_GENERIC=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM4_ARM64_CE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM4_ARM64_CE_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM4_ARM64_NEON_BLK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TEE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_OPTEE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_OPTEE_BENCHMARK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_OPTEE_APDU=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_QCOM_QSEECOM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_TRUSTZONE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_DEV_QCOM_RNG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_IP_NF_TARGET_TTL=y" >> "$DEFCONFIG"
+          echo "CONFIG_IP6_NF_TARGET_HL=y" >> "$DEFCONFIG"
+          echo "CONFIG_IP6_NF_MATCH_HL=y" >> "$DEFCONFIG"
+          echo "CONFIG_IP_NF_TARGET_ECN=y" >> "$DEFCONFIG"
+          echo "CONFIG_IP_ECN=y" >> "$DEFCONFIG"
+          echo "CONFIG_TCP_ECN=y" >> "$DEFCONFIG"
+          echo "CONFIG_IPV6_ECN=y" >> "$DEFCONFIG"
+          echo "CONFIG_TMPFS_XATTR=y" >> "$DEFCONFIG"
+          echo "CONFIG_TMPFS_POSIX_ACL=y" >> "$DEFCONFIG"
+          echo "CONFIG_RCU_TRACE=n" >> "$DEFCONFIG"
+          echo "CONFIG_DRM_MSM_DSI_165HZ=y" >> "$DEFCONFIG"
+          echo "CONFIG_QCOM_KGSL_165HZ_GPU_FREQ=y" >> "$DEFCONFIG"
+          echo "CONFIG_QCOM_KGSL_DYNAMIC_FPS=y" >> "$DEFCONFIG"
+          echo "CONFIG_SCHED_CLASS_EXT=y" >> "$DEFCONFIG"
+          echo "CONFIG_BPF_JIT_ALWAYS_ON=y" >> "$DEFCONFIG"
+          echo "CONFIG_DEBUG_INFO_BTF=y" >> "$DEFCONFIG"
+          echo "CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y" >> "$DEFCONFIG"
+          echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> "$DEFCONFIG"
+          echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> "$DEFCONFIG"
+          echo "CONFIG_SECURITY_SELINUX_AVC_STATS=y" >> "$DEFCONFIG"
+          echo "CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0" >> "$DEFCONFIG"
+          echo "CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS=9" >> "$DEFCONFIG"
+          echo "CONFIG_SECURITY_SELINUX_SID2STR_CACHE_SIZE=256" >> "$DEFCONFIG"
+          echo "CONFIG_ARM_PSCI=y" >> "$DEFCONFIG"
+          echo "CONFIG_ARM_PSCI_FW=y" >> "$DEFCONFIG"
+          echo "CONFIG_ARM_SCPI_PROTOCOL=y" >> "$DEFCONFIG"
+          echo "CONFIG_ARM_SCPI_POWER_DOMAIN=y" >> "$DEFCONFIG"
+          echo "CONFIG_DEVTMPFS=y" >> "$DEFCONFIG"
+          echo "CONFIG_DEVTMPFS_MOUNT=y" >> "$DEFCONFIG"
+          echo "CONFIG_DEVTMPFS_SAFE=y" >> "$DEFCONFIG"
+          echo "CONFIG_ION=y" >> "$DEFCONFIG"
+          echo "CONFIG_ION_SYSTEM_HEAP=y" >> "$DEFCONFIG"
+          echo "CONFIG_ION_CARVEOUT_HEAP=y" >> "$DEFCONFIG"
+          echo "CONFIG_ION_CHUNK_HEAP=y" >> "$DEFCONFIG"
+          echo "CONFIG_ION_CMA_HEAP=y" >> "$DEFCONFIG"
+          echo "CONFIG_CRYPTO_USER_API_HASH=y" >> "$DEFCONFIG"
+          echo "CONFIG_CRYPTO_USER_API_SKCIPHER=y" >> "$DEFCONFIG"
+          echo "CONFIG_CRYPTO_USER_API_AEAD=y" >> "$DEFCONFIG"
+          echo "CONFIG_CRYPTO_USER_API_RNG=y" >> "$DEFCONFIG"
+          echo "CONFIG_CRYPTO_ECDSA=y" >> "$DEFCONFIG"
+          echo "CONFIG_CRYPTO_SM2=y" >> "$DEFCONFIG"
+          echo "CONFIG_CRYPTO_SM3_GENERIC=y" >> "$DEFCONFIG"
+          echo "CONFIG_CRYPTO_SM4_ARM64_CE=y" >> "$DEFCONFIG"
+          echo "CONFIG_CRYPTO_SM4_ARM64_CE_BLK=y" >> "$DEFCONFIG"
+          echo "CONFIG_CRYPTO_SM4_ARM64_NEON_BLK=y" >> "$DEFCONFIG"
+          echo "CONFIG_TEE=y" >> "$DEFCONFIG"
+          echo "CONFIG_OPTEE=y" >> "$DEFCONFIG"
+          echo "CONFIG_OPTEE_BENCHMARK=y" >> "$DEFCONFIG"
+          echo "CONFIG_OPTEE_APDU=y" >> "$DEFCONFIG"
+          echo "CONFIG_QCOM_QSEECOM=y" >> "$DEFCONFIG"
+          echo "CONFIG_ARM_TRUSTZONE=y" >> "$DEFCONFIG"
+          echo "CONFIG_CRYPTO_DEV_QCOM_RNG=y" >> "$DEFCONFIG"
+          echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> "$DEFCONFIG"
           sed -i 's/check_defconfig//' ./common/build.config.gki
 
       - name: 启用网络功能增强优化配置
         run: |
           cd kernel_workspace
+          DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
+          if [[ ! -f "$DEFCONFIG" ]]; then
+            echo "错误：未找到 $DEFCONFIG"
+            exit 1
+          fi
           if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
-            echo "CONFIG_BPF_STREAM_PARSER=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NETFILTER_XT_SET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_MAX=65534" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_BITMAP_IP=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_BITMAP_IPMAC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_BITMAP_PORT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IP=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPMARK=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPPORT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPPORTIP=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPPORTNET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPMAC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_MAC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETPORTNET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETNET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETPORT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETIFACE=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_LIST_SET=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP6_NF_NAT=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./common/arch/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE=.*/CONFIG_CRYPTO_AES_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_SHA2_ARM64_CE=.*/CONFIG_CRYPTO_SHA2_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_SHA512_ARM64_CE=.*/CONFIG_CRYPTO_SHA512_ARM64_CE=y/' ./common/arch/conf/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_POLYVAL_ARM64_CE=.*/CONFIG_CRYPTO_POLYVAL_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE_BLK=.*/CONFIG_CRYPTO_AES_ARM64_CE_BLK=y/' ./common/arch/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BPF_STREAM_PARSER=y" >> "$DEFCONFIG"
+            echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> "$DEFCONFIG"
+            echo "CONFIG_NETFILTER_XT_SET=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_MAX=65534" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_BITMAP_IP=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_BITMAP_IPMAC=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_BITMAP_PORT=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_IP=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_IPMARK=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_IPPORT=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_IPPORTIP=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_IPPORTNET=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_IPMAC=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_MAC=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_NETPORTNET=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_NET=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_NETNET=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_NETPORT=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_HASH_NETIFACE=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP_SET_LIST_SET=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP6_NF_NAT=y" >> "$DEFCONFIG"
+            echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> "$DEFCONFIG"
+            sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE=.*/CONFIG_CRYPTO_AES_ARM64_CE=y/' "$DEFCONFIG"
+            sed -i 's/CONFIG_CRYPTO_SHA2_ARM64_CE=.*/CONFIG_CRYPTO_SHA2_ARM64_CE=y/' "$DEFCONFIG"
+            sed -i 's/CONFIG_CRYPTO_SHA512_ARM64_CE=.*/CONFIG_CRYPTO_SHA512_ARM64_CE=y/' "$DEFCONFIG"
+            sed -i 's/CONFIG_CRYPTO_POLYVAL_ARM64_CE=.*/CONFIG_CRYPTO_POLYVAL_ARM64_CE=y/' "$DEFCONFIG"
+            sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE_BLK=.*/CONFIG_CRYPTO_AES_ARM64_CE_BLK=y/' "$DEFCONFIG"
+            sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' "$DEFCONFIG"
             cd common
             wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
             patch -p1 -F 3 < config.patch || true
@@ -444,19 +442,20 @@ jobs:
           if [[ "${{ github.event.inputs.bbr_enable }}" == "true" || "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
             echo "正在添加BBR等拥塞控制算法..."
             cd kernel_workspace
-            echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_BBR=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_CUBIC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_VEGAS=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_NV=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_WESTWOOD=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_HTCP=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_BRUTAL=y" >> ./common/arch/arm64/configs/gki_defconfig
+            DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_TCP_CONG_ADVANCED=y" >> "$DEFCONFIG"
+            echo "CONFIG_TCP_CONG_BBR=y" >> "$DEFCONFIG"
+            echo "CONFIG_TCP_CONG_CUBIC=y" >> "$DEFCONFIG"
+            echo "CONFIG_TCP_CONG_VEGAS=y" >> "$DEFCONFIG"
+            echo "CONFIG_TCP_CONG_NV=y" >> "$DEFCONFIG"
+            echo "CONFIG_TCP_CONG_WESTWOOD=y" >> "$DEFCONFIG"
+            echo "CONFIG_TCP_CONG_HTCP=y" >> "$DEFCONFIG"
+            echo "CONFIG_TCP_CONG_BRUTAL=y" >> "$DEFCONFIG"
             if [[ "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
               echo "正在将BBR设为默认拥塞控制算法..."
-              echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> "$DEFCONFIG"
             else
-              echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> ./common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> "$DEFCONFIG"
             fi
           fi
 
@@ -465,8 +464,9 @@ jobs:
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "true" ]]; then
             echo "正在启用三星SSG IO调度器(一加12等极少数机型开启后可能不开机,若出现bug请关闭此项)…"
             cd kernel_workspace
-            echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
+            DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_MQ_IOSCHED_SSG=y" >> "$DEFCONFIG"
+            echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> "$DEFCONFIG"
           fi
 
       - name: 启用Re-Kernel支持
@@ -474,7 +474,8 @@ jobs:
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "true" ]]; then
             echo "正在启用Re-Kernel支持(用于与Freezer,NoActive等软件配合使用,提升冻结后台能力)…"
             cd kernel_workspace
-            echo "CONFIG_REKERNEL=y" >> ./common/arch/arm64/configs/gki_defconfig
+            DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_REKERNEL=y" >> "$DEFCONFIG"
           fi
 
       - name: 启用 EEVDF 调度器
@@ -482,7 +483,8 @@ jobs:
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "true" ]]; then
             echo "正在启用EEVDF支持"
             cd kernel_workspace
-            echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
+            DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_SCHED_EEVDF=y" >> "$DEFCONFIG"
           fi
 
       - name: 添加制作名称
@@ -532,7 +534,7 @@ jobs:
               echo "    bool \"Enable SchedExt (HanKuCha SCX)\"" >> Kconfig
               echo "    default y" >> Kconfig
               echo "    help" >> Kconfig
-              echo "      Enable the external SCX scheduler for advanced tuning." >> Kconfig
+              echo "    Enable the external SCX scheduler for advanced tuning." >> Kconfig
             fi
             grep -q hmbird_sched_proc_main.o Makefile || \
               echo 'obj-$(CONFIG_SCHED_CLASS_EXT) += hmbird_sched_proc_main.o slim_sysctl.o' >> Makefile
