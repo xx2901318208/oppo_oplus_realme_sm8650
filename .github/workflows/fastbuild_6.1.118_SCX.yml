@@ -114,6 +114,7 @@ jobs:
           df -h
           echo "当前构建内核版本：6.1.118"
           rm -rf kernel_platform
+          sudo rm -rf /tmp/* &
 
       - name: 载入当前版本内核的 ccache缓存
         uses: actions/cache@v3
@@ -155,12 +156,22 @@ jobs:
             echo "错误：源码下载失败"
             exit 1
           fi
+          echo "解压 common.zip..."
           if ! unzip -q common.zip; then
             echo "错误：解压 common.zip 失败"
             ls -l
             exit 1
           fi
-          if ! mv "android_kernel_common_oneplus_sm8650-oneplus-sm8650_v_15.0.0_oneplus12_6.1.118" common; then
+          echo "解压后目录结构："
+          ls -l
+          SOURCE_DIR=$(ls -d android_kernel_common_oneplus_sm8650-* 2>/dev/null || echo "")
+          if [[ -z "$SOURCE_DIR" ]]; then
+            echo "错误：未找到解压后的内核源码目录"
+            ls -l
+            exit 1
+          fi
+          echo "找到源码目录：$SOURCE_DIR"
+          if ! mv "$SOURCE_DIR" common; then
             echo "错误：重命名源码目录失败"
             ls -l
             exit 1
@@ -173,6 +184,8 @@ jobs:
           rm -rf common.zip
           echo "源码目录结构："
           ls -ld common
+          echo "common 目录内容："
+          find common -maxdepth 1
           echo "正在克隆llvm-Clang20工具链..."
           rm -rf clang20
           mkdir -p clang20
@@ -211,6 +224,11 @@ jobs:
         id: ksu_version
         run: |
           cd kernel_workspace
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            ls -l
+            exit 1
+          fi
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             echo "正在配置SukiSU Ultra..."
             curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/refs/heads/main/kernel/setup.sh" | bash -s susfs-main
@@ -330,9 +348,15 @@ jobs:
       - name: 添加 KSU & SUSFS 配置项
         run: |
           cd kernel_workspace
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            ls -l
+            exit 1
+          fi
           DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
           if [[ ! -f "$DEFCONFIG" ]]; then
             echo "错误：未找到 $DEFCONFIG"
+            ls -l ./common/arch/arm64/configs
             exit 1
           fi
           echo "CONFIG_KSU=y" >> "$DEFCONFIG"
@@ -437,9 +461,15 @@ jobs:
       - name: 启用网络功能增强优化配置
         run: |
           cd kernel_workspace
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            ls -l
+            exit 1
+          fi
           DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
           if [[ ! -f "$DEFCONFIG" ]]; then
             echo "错误：未找到 $DEFCONFIG"
+            ls -l ./common/arch/arm64/configs
             exit 1
           fi
           if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
@@ -479,9 +509,14 @@ jobs:
 
       - name: 添加 BBR 等一系列拥塞控制算法
         run: |
+          cd kernel_workspace
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            ls -l
+            exit 1
+          fi
           if [[ "${{ github.event.inputs.bbr_enable }}" == "true" || "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
             echo "正在添加BBR等拥塞控制算法..."
-            cd kernel_workspace
             DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_TCP_CONG_ADVANCED=y" >> "$DEFCONFIG"
             echo "CONFIG_TCP_CONG_BBR=y" >> "$DEFCONFIG"
@@ -501,9 +536,14 @@ jobs:
 
       - name: 启用三星SSG IO调度器
         run: |
+          cd kernel_workspace
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            ls -l
+            exit 1
+          fi
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "true" ]]; then
             echo "正在启用三星SSG IO调度器(一加12等极少数机型开启后可能不开机,若出现bug请关闭此项)…"
-            cd kernel_workspace
             DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_MQ_IOSCHED_SSG=y" >> "$DEFCONFIG"
             echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> "$DEFCONFIG"
@@ -511,18 +551,28 @@ jobs:
 
       - name: 启用Re-Kernel支持
         run: |
+          cd kernel_workspace
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            ls -l
+            exit 1
+          fi
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "true" ]]; then
             echo "正在启用Re-Kernel支持(用于与Freezer,NoActive等软件配合使用,提升冻结后台能力)…"
-            cd kernel_workspace
             DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_REKERNEL=y" >> "$DEFCONFIG"
           fi
 
       - name: 启用 EEVDF 调度器
         run: |
+          cd kernel_workspace
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            ls -l
+            exit 1
+          fi
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "true" ]]; then
             echo "正在启用EEVDF支持"
-            cd kernel_workspace
             DEFCONFIG=./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_SCHED_EEVDF=y" >> "$DEFCONFIG"
           fi
@@ -530,6 +580,11 @@ jobs:
       - name: 添加制作名称
         run: |
           cd kernel_workspace
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            ls -l
+            exit 1
+          fi
           echo "替换内核版本后缀..."
           if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
             echo "当前内核版本后缀：${{ github.event.inputs.kernel_suffix }}"
@@ -640,9 +695,15 @@ jobs:
 
       - name: 应用KPM并修补内核
         run: |
+          cd kernel_workspace
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            ls -l
+            exit 1
+          fi
           if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             echo "正在应用KPM并修补内核..."
-            cd kernel_workspace/common/out/arch/arm64/boot
+            cd common/out/arch/arm64/boot
             curl -LO https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.12.0/patch_linux
             chmod +x patch_linux
             ./patch_linux
@@ -653,6 +714,11 @@ jobs:
       - name: 克隆 AnyKernel3 并打包
         run: |
           cd kernel_workspace
+          if [[ ! -d "common" ]]; then
+            echo "错误：未找到 kernel_workspace/common 目录"
+            ls -l
+            exit 1
+          fi
           git clone https://github.com/xx2901318208/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
           cd AnyKernel3
