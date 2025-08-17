@@ -193,12 +193,7 @@ jobs:
           rm -rf build-tools
           aria2c -s16 -x16 -k1M https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang20-r547379/build-tools.zip -o build-tools.zip
           unzip -q build-tools.zip
-          rm -rf build-tools.zip
-          echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
-          rm common/android/abi_gki_protected_exports_* || true
-          for f in common/scripts/setlocalversion; do
-            sed -i 's/ -dirty//g' "$f"
-            sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
+          rm -rf build-tools.zip          
           done
 
       - name: 添加KernelSU
