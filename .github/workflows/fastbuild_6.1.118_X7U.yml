@@ -193,8 +193,7 @@ jobs:
           rm -rf build-tools
           aria2c -s16 -x16 -k1M https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang20-r547379/build-tools.zip -o build-tools.zip
           unzip -q build-tools.zip
-          rm -rf build-tools.zip          
-          done
+          rm -rf build-tools.zip                
 
       - name: 添加KernelSU
         id: ksu_version
