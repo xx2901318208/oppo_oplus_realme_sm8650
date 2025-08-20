@@ -171,17 +171,17 @@ jobs:
           mkdir kernel_workspace
           cd kernel_workspace
           echo "正在克隆源码仓库..."
-          git clone https://github.com/xx2901318208/gt5pro_kernel_manifest.git -b realme/SM8650
+          git clone https://github.com/xx2901318208/gt5pro_kernel_manifest.git -b realme/sm8650
           cd gt5pro_kernel_manifest
           echo "清单文件内容："
           cat .repo/manifests/oppogt5pro.xml || echo "❗ 清单文件 oppogt5pro.xml 不存在"
           echo "正在初始化 repo..."
-          repo init -u https://github.com/xx2901318208/gt5pro_kernel_manifest.git -b realme/SM8650 -m oppogt5pro.xml
+          repo init -u https://github.com/xx2901318208/gt5pro_kernel_manifest.git -b realme/sm8650 -m gt5pro.xml
           echo "正在同步源码（详细日志）..."
           repo sync -j1 --fail-fast -v || {
             echo "repo sync 失败，尝试强制清理并重新同步..."
             rm -rf .repo
-            repo init -u https://github.com/xx2901318208/gt5pro_kernel_manifest.git -b realme/SM8650 -m oppogt5pro.xml
+            repo init -u https://github.com/xx2901318208/gt5pro_kernel_manifest.git -b realme/sm8650 -m gt5pro.xml
             repo sync -j1 --fail-fast -v --no-clone-bundle
           }
           echo "检查 android_kernel_modules_and_devicetree_oppo_sm8650 仓库状态..."
