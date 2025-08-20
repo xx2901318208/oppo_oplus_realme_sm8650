@@ -217,8 +217,8 @@ jobs:
         run: |
           cd kernel_workspace
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then     
-            git --depth=1 clone https://github.com/ShirkNeko/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
-            git --depth=1 clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
+            git clone https://github.com/ShirkNeko/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
+            git clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
             echo "正在添加SukiSU Ultra补丁..."
             ls -ld ../susfs4ksu || echo "❗ susfs4ksu 目录不存在"
             ls -ld ../SukiSU_patch || echo "❗ SukiSU_patch 目录不存在"
