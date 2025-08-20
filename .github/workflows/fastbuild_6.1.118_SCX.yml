@@ -311,33 +311,33 @@ jobs:
           cp -r ./sched_ext/* ./kernel/sched
           rm -rf ./sched_ext/.git
           cd kernel/sched
-            # 确保 Kconfig 存在（若无则新建）
+          # 确保 Kconfig 存在（若无则新建）
           [ -f Kconfig ] || touch Kconfig
           if ! grep -q SCHED_CLASS_EXT Kconfig; then
-           echo "config SCHED_CLASS_EXT" >> Kconfig
-           echo "    bool \"Enable SchedExt (HanKuCha SCX)\"" >> Kconfig
-           echo "    default n" >> Kconfig
-           echo "    help" >> Kconfig
-           echo "      Enable the external SCX scheduler for advanced tuning." >> Kconfig
+            echo "config SCHED_CLASS_EXT" >> Kconfig
+            echo "    bool \"Enable SchedExt (HanKuCha SCX)\"" >> Kconfig
+            echo "    default n" >> Kconfig
+            echo "    help" >> Kconfig
+            echo "      Enable the external SCX scheduler for advanced tuning." >> Kconfig
           fi
-            # 确保 Makefile 追加
+          # 确保 Makefile 追加
           grep -q hmbird_sched_proc_main.o Makefile || \
-          echo 'obj-$(CONFIG_SCHED_CLASS_EXT) += hmbird_sched_proc_main.o slim_sysctl.o' >> Makefile
-             # 确保 defconfig 追加
+            echo 'obj-$(CONFIG_SCHED_CLASS_EXT) += hmbird_sched_proc_main.o slim_sysctl.o' >> Makefile
+          # 确保 defconfig 追加
           DEFCONFIG=../../arch/arm64/configs/gki_defconfig
           grep -q CONFIG_SCHED_CLASS_EXT "$DEFCONFIG" || echo 'CONFIG_SCHED_CLASS_EXT=y' >> "$DEFCONFIG"
 
       - name: "[DEBUG] SCX目录结构和主要文件内容"
         if: ${{ github.event.inputs.SCX == 'true' }}
         run: |
-          echo "==== [DEBUG] kernel_workspace/kernel_platform/common/kernel/sched 目录结构 ===="
-          ls -l kernel_workspace/kernel_platform/common/kernel/sched || true
+          echo "==== [DEBUG] kernel_workspace/common/kernel/sched 目录结构 ===="
+          ls -l kernel_workspace/common/kernel/sched || true
           echo "==== [DEBUG] Kconfig内容 ===="
-          cat kernel_workspace/kernel_platform/common/kernel/sched/Kconfig || echo "无Kconfig"
+          cat kernel_workspace/common/kernel/sched/Kconfig || echo "无Kconfig"
           echo "==== [DEBUG] Makefile内容 ===="
-          cat kernel_workspace/kernel_platform/common/kernel/sched/Makefile || echo "无Makefile"
+          cat kernel_workspace/common/kernel/sched/Makefile || echo "无Makefile"
           echo "==== [DEBUG] defconfig内容 ===="
-          cat kernel_workspace/kernel_platform/common/arch/arm64/configs/gki_defconfig || echo "无defconfig"
+          cat kernel_workspace/common/arch/arm64/configs/gki_defconfig || echo "无defconfig"
           
       - name: 添加 KSU & SUSFS 配置项
         run: |
@@ -550,7 +550,7 @@ jobs:
         if: ${{ (github.event.inputs.KERNEL_VERSION == '5.10' || github.event.inputs.KERNEL_VERSION == '5.15') && github.event.inputs.SCX == 'true' }}
         shell: bash
         run: |
-          target_file="kernel_workspace/kernel_platform/build/kernel/build.sh"
+          target_file="kernel_workspace/common/build/kernel/build.sh"
           if [[ ! -f "$target_file" ]]; then
             echo "❌ 未找到 build.sh: $target_file"
             exit 1
@@ -570,7 +570,7 @@ jobs:
       - name: "[DEBUG] 编译前关键路径和配置检查"
         run: |
           echo "==== [DEBUG] 查找所有 .config 文件 ===="
-          find kernel_workspace -type f -name ".config" | tee all_config_paths.txt
+          find kernel_workspace/common -type f -name ".config" | tee all_config_paths.txt
 
           echo "==== [DEBUG] .config 主要内容 ===="
           for cfile in $(cat all_config_paths.txt); do
@@ -632,7 +632,7 @@ jobs:
       - name: "[DEBUG] 编译后查找 .config、SCX对象等"
         run: |
           echo "==== [DEBUG] 查找所有 .config 文件 ===="
-          find kernel_workspace -type f -name ".config" | tee all_config_paths.txt
+          find kernel_workspace/common -type f -name ".config" | tee all_config_paths.txt
 
           echo "==== [DEBUG] .config 主要内容 ===="
           for cfile in $(cat all_config_paths.txt); do
@@ -642,7 +642,7 @@ jobs:
           done
 
           echo "==== [DEBUG] out 目录结构（3层） ===="
-          tree -L 3 kernel_workspace/kernel_platform/out || true
+          tree -L 3 kernel_workspace/common/out || true
 
           echo "==== [DEBUG] SCX对象文件 ===="
           find kernel_workspace/common/out -name "hmbird_sched_proc_main.o" || echo "无hmbird_sched_proc_main.o"
@@ -669,9 +669,9 @@ jobs:
         if: ${{ github.event.inputs.SCX == 'true' }}
         run: |
           echo "==== [DEBUG] 查找hmbird_sched_proc_main.o ===="
-          find "${{ env.OUTROOT }}" -name "hmbird_sched_proc_main.o" || echo "无hmbird_sched_proc_main.o"
+          find kernel_workspace/common/out -name "hmbird_sched_proc_main.o" || echo "无hmbird_sched_proc_main.o"
           echo "==== [DEBUG] 查找slim_sysctl.o ===="
-          find "${{ env.OUTROOT }}" -name "slim_sysctl.o" || echo "无slim_sysctl.o"
+          find kernel_workspace/common/out -name "slim_sysctl.o" || echo "无slim_sysctl.o"
           echo "==== [DEBUG] 查找Image文件 ===="
           echo "${{ env.IMAGE }}"
 
