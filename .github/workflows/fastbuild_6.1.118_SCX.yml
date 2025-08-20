@@ -580,10 +580,10 @@ jobs:
           done
 
           echo "==== [DEBUG] out 目录结构（3层） ===="
-          tree -L 3 kernel_workspace/kernel_platform/out || true
+          tree -L 3 kernel_workspace/common/out || true
 
           echo "==== [DEBUG] 当前build.sh patch片段 ===="
-          grep -A 10 "SCX patch start" kernel_workspace/kernel_platform/build/kernel/build.sh || true
+          grep -A 10 "SCX patch start" kernel_workspace/common/build/kernel/build.sh || true
           
       - name: 构建内核
         run: |
@@ -645,8 +645,8 @@ jobs:
           tree -L 3 kernel_workspace/kernel_platform/out || true
 
           echo "==== [DEBUG] SCX对象文件 ===="
-          find kernel_workspace/kernel_platform/out -name "hmbird_sched_proc_main.o" || echo "无hmbird_sched_proc_main.o"
-          find kernel_workspace/kernel_platform/out -name "slim_sysctl.o" || echo "无slim_sysctl.o"
+          find kernel_workspace/common/out -name "hmbird_sched_proc_main.o" || echo "无hmbird_sched_proc_main.o"
+          find kernel_workspace/common/out -name "slim_sysctl.o" || echo "无slim_sysctl.o"
 
       - name: "[DEBUG] 自动查找Image路径等"
         id: image_path
