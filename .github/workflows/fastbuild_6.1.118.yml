@@ -101,6 +101,15 @@ jobs:
             curl bison flex make binutils git perl gcc python3 \
             python-is-python3 bc libssl-dev libelf-dev \
             bc aria2 zip unzip ccache
+          echo "检查当前 Git 版本："
+          git --version
+          echo "升级 Git 到最新版本..."
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository ppa:git-core/ppa -y
+          sudo apt update
+          sudo apt-get install -y git
+          echo "升级后的 Git 版本："
+          git --version
 
       - name: 配置ccache目录
         run: |
@@ -217,18 +226,20 @@ jobs:
         run: |
           cd kernel_workspace
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then     
-            git clone https://github.com/ShirkNeko/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
-            git clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
+            echo "克隆 susfs4ksu 仓库..."
+            git clone --depth=1 https://github.com/ShirkNeko/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }} || git clone https://github.com/ShirkNeko/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
+            echo "克隆 SukiSU_patch 仓库..."
+            git clone --depth=1 https://github.com/SukiSU-Ultra/SukiSU_patch.git || git clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
             echo "正在添加SukiSU Ultra补丁..."
-            ls -ld ../susfs4ksu || echo "❗ susfs4ksu 目录不存在"
-            ls -ld ../SukiSU_patch || echo "❗ SukiSU_patch 目录不存在"
+            ls -ld ./susfs4ksu || echo "❗ susfs4ksu 目录不存在"
+            ls -ld ./SukiSU_patch || echo "❗ SukiSU_patch 目录不存在"
             cd common
             ls -l ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || echo "❗ SUSFS 补丁文件不存在"
             cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch .
             cp ../susfs4ksu/kernel_patches/fs/* ./fs/
             cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/
-            ls -l ../SukiSU_patch/hooks/syscall_hooks.patch || echo "❗ syscall_hooks.patch 文件不存在"
-            ls -l ../SukiSU_patch/69_hide_stuff.patch || echo "❗ 69_hide_stuff.patch 文件不存在"
+            ls -l ../SukiSU_patch/hooks/syscall_hooks.patch || echo "❗ syscall_hooks.patch 补丁文件不存在"
+            ls -l ../SukiSU_patch/69_hide_stuff.patch || echo "❗ 69_hide_stuff.patch 补丁文件不存在"
             cp ../SukiSU_patch/hooks/syscall_hooks.patch .
             cp ../SukiSU_patch/69_hide_stuff.patch .
             if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
@@ -244,8 +255,8 @@ jobs:
             echo "✅ SUSFS 和 syscall_hooks patch 应用完成"
           else
             echo "正在添加KernelSU Next补丁..."
-            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
-            git clone https://github.com/WildKernels/kernel_patches.git
+            git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }} || git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
+            git clone --depth=1 https://github.com/WildKernels/kernel_patches.git || git clone https://github.com/WildKernels/kernel_patches.git
             ls -ld ./susfs4ksu || echo "❗ susfs4ksu 目录不存在"
             ls -ld ./kernel_patches || echo "❗ kernel_patches 目录不存在"
             cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
@@ -287,8 +298,8 @@ jobs:
               fi
             fi
           done
-          echo "补丁应用完成，检查状态："
-          git status
+          echo "补丁应用完成，检查修改的文件："
+          ls -l lib/Kconfig lib/Makefile crypto/Kconfig crypto/Makefile drivers/block/zram/Kconfig drivers/block/zram/zcomp.c kernel/module/main.c || echo "❗ 部分文件未找到，可能补丁未正确应用"
 
       - name: 添加 KSU & SUSFS 配置项
         run: |
@@ -514,11 +525,9 @@ jobs:
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="3G"
-         
-          echo "正在应用风驰调度"
           cd kernel_workspace/common
           if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
-            git clone https://github.com/cctv18/sched_ext.git
+            git clone --depth=1 https://github.com/cctv18/sched_ext.git || git clone https://github.com/cctv18/sched_ext.git
             rm -rf ./sched_ext/.git
             rm -rf ./sched_ext/README.md
             cp -r ./sched_ext/* ./kernel/sched
@@ -551,7 +560,7 @@ jobs:
       - name: 克隆 AnyKernel3 并打包
         run: |
           cd kernel_workspace
-          git clone https://github.com/xx2901318208/AnyKernel3 --depth=1
+          git clone --depth=1 https://github.com/xx2901318208/AnyKernel3 || git clone https://github.com/xx2901318208/AnyKernel3
           rm -rf ./AnyKernel3/.git
           cd AnyKernel3
           cp ../common/out/arch/arm64/boot/Image ./Image
