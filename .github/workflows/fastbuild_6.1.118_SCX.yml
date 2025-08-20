@@ -302,33 +302,30 @@ jobs:
           ls -l lib/Kconfig lib/Makefile crypto/Kconfig crypto/Makefile drivers/block/zram/Kconfig drivers/block/zram/zcomp.c kernel/module/main.c || echo "❗ 部分文件未找到，可能补丁未正确应用"
 
       - name: 下载并应用SCX补丁
-  if: ${{ github.event.inputs.SCX == 'true' }}
-  run: |
-    cd kernel_workspace/common
-    git clone https://github.com/cctv18/sched_ext.git
-    # 确保目标目录存在
-    mkdir -p ./kernel/sched
-    cp -r ./sched_ext/* ./kernel/sched
-    rm -rf ./sched_ext/.git
-    cd kernel/sched
-
-    # 确保 Kconfig 存在（若无则新建）
-    [ -f Kconfig ] || touch Kconfig
-    if ! grep -q SCHED_CLASS_EXT Kconfig; then
-      echo "config SCHED_CLASS_EXT" >> Kconfig
-      echo "    bool \"Enable SchedExt (HanKuCha SCX)\"" >> Kconfig
-      echo "    default n" >> Kconfig
-      echo "    help" >> Kconfig
-      echo "      Enable the external SCX scheduler for advanced tuning." >> Kconfig
-    fi
-
-    # 确保 Makefile 追加
-    grep -q hmbird_sched_proc_main.o Makefile || \
-      echo 'obj-$(CONFIG_SCHED_CLASS_EXT) += hmbird_sched_proc_main.o slim_sysctl.o' >> Makefile
-
-    # 确保 defconfig 追加
-    DEFCONFIG=../../arch/arm64/configs/gki_defconfig
-    grep -q CONFIG_SCHED_CLASS_EXT "$DEFCONFIG" || echo 'CONFIG_SCHED_CLASS_EXT=y' >> "$DEFCONFIG"
+        if: ${{ github.event.inputs.SCX == 'true' }}
+        run: |
+          cd kernel_workspace/common
+          git clone https://github.com/cctv18/sched_ext.git
+          # 确保目标目录存在
+          mkdir -p ./kernel/sched
+          cp -r ./sched_ext/* ./kernel/sched
+          rm -rf ./sched_ext/.git
+          cd kernel/sched
+            # 确保 Kconfig 存在（若无则新建）
+          [ -f Kconfig ] || touch Kconfig
+          if ! grep -q SCHED_CLASS_EXT Kconfig; then
+           echo "config SCHED_CLASS_EXT" >> Kconfig
+           echo "    bool \"Enable SchedExt (HanKuCha SCX)\"" >> Kconfig
+           echo "    default n" >> Kconfig
+           echo "    help" >> Kconfig
+           echo "      Enable the external SCX scheduler for advanced tuning." >> Kconfig
+          fi
+            # 确保 Makefile 追加
+          grep -q hmbird_sched_proc_main.o Makefile || \
+          echo 'obj-$(CONFIG_SCHED_CLASS_EXT) += hmbird_sched_proc_main.o slim_sysctl.o' >> Makefile
+             # 确保 defconfig 追加
+          DEFCONFIG=../../arch/arm64/configs/gki_defconfig
+          grep -q CONFIG_SCHED_CLASS_EXT "$DEFCONFIG" || echo 'CONFIG_SCHED_CLASS_EXT=y' >> "$DEFCONFIG"
 
       - name: "[DEBUG] SCX目录结构和主要文件内容"
         if: ${{ github.event.inputs.SCX == 'true' }}
