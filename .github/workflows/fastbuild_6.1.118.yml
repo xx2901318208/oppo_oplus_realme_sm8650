@@ -3,7 +3,7 @@ name: 加速版构建 6.1.118 欧加真OKI内核
 env:
   TZ: Asia/Shanghai
   CPU: 'sm8650'
-  FEIL: 'oppo+oplus+realme'
+  FEIL: 'gt5pro'
   ANDROID_VERSION: 'android14'
   KERNEL_VERSION: '6.1'
   KERNEL_NAME: 'android14-11-o-g31602dff16cb'
