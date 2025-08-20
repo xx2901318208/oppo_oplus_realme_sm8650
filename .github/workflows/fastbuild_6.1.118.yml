@@ -333,21 +333,7 @@ jobs:
           echo "CONFIG_KSU_SUSFS_ENABLE_LOG=n" >> ./arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./arch/arm64/configs/gki_defconfig
-          if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
-            echo "CONFIG_CRYPTO_LZ4KD=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ZRAM_WRITEBACK=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ZSMALLOC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4HC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4K=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_842=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_COMPRESSION=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_LZ4=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_LZ4HC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_LZ4KD=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_ZSTD=y" >> ./arch/arm64/configs/gki_defconfig
-          fi
+          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./arch/arm64/configs/gki_defconfig   
           echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./arch/arm64/configs/gki_defconfig
           echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./arch/arm64/configs/gki_defconfig
           echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./arch/arm64/configs/gki_defconfig
@@ -401,6 +387,22 @@ jobs:
           echo "CONFIG_ARM_TRUSTZONE=y" >> ./arch/arm64/configs/gki_defconfig
           echo "CONFIG_CRYPTO_DEV_QCOM_RNG=y" >> ./arch/arm64/configs/gki_defconfig
           echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> ./arch/arm64/configs/gki_defconfig
+          
+          echo "配置 ZRAM ："
+          if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
+            echo "CONFIG_CRYPTO_LZ4KD=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_ZRAM_WRITEBACK=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_ZSMALLOC=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_LZ4HC=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_LZ4K=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_842=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_F2FS_FS_COMPRESSION=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_F2FS_FS_LZ4=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_F2FS_FS_LZ4HC=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_F2FS_FS_LZ4KD=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_F2FS_FS_ZSTD=y" >> ./arch/arm64/configs/gki_defconfig
+          fi
           sed -i 's/check_defconfig//' ./build.config.gki
           if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
             echo "检查 ZRAM 配置："
