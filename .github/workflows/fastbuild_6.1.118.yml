@@ -127,19 +127,21 @@ jobs:
 
       - name: 初始化并配置ccache
         run: |
-          export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
-          export CCACHE_NOHASHDIR="true"
-          export CCACHE_HARDLINK="true"
-          export CCACHE_DIR="${{ env.CCACHE_DIR }}"
-          export CCACHE_MAXSIZE="${{ env.CCACHE_MAXSIZE }}"
-          mkdir -p "$CCACHE_DIR"
-          ccache -M "$CCACHE_MAXSIZE"
-          ccache -o compression=zstd
-          ccache -o compression_level=6
-          ccache -s
-          if [ "${{ steps.ccache-restore.outputs.cache-hit }}" == 'true' ]; then
-            ccache -sv
-          fi
+         export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
+         export CCACHE_NOHASHDIR="true"
+         export CCACHE_HARDLINK="true"
+         export CCACHE_DIR="${{ env.CCACHE_DIR }}"
+         export CCACHE_MAXSIZE="${{ env.CCACHE_MAXSIZE }}"
+         mkdir -p "$CCACHE_DIR"
+         ccache -M "$CCACHE_MAXSIZE"
+         ccache -o compression=true  
+         ccache -o compression_type=zstd  
+         ccache -o compression_level=6  
+         ccache -s
+         if [ "${{ steps.ccache-restore.outputs.cache-hit }}" == 'true' ]; then
+          ccache -sv
+         fi
+
 
       - name: 初始化源码仓库及llvm-Clang20工具链
         run: |
