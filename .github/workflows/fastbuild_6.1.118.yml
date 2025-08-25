@@ -458,29 +458,40 @@ jobs:
           export PATH="/usr/lib/ccache:$PATH"
           export PATH="$WORKDIR/kernel_workspace/clang20/bin:$PATH"
           export PATH="$WORKDIR/kernel_workspace/build-tools/bin:$PATH"
-
           CLANG_DIR="$WORKDIR/kernel_workspace/clang20/bin"
-          echo "Clang版本: $($CLANG_DIR/clang --version | head -n 1)"
-          echo "LLD版本: $($CLANG_DIR/ld.lld --version | head -n 1)"
-
+          CLANG_VERSION="$($CLANG_DIR/clang --version | head -n 1)"
+          LLD_VERSION="$($CLANG_DIR/ld.lld --version | head -n 1)"
+          echo "编译器信息:"
+          echo "Clang版本: $CLANG_VERSION"
+          echo "LLD版本: $LLD_VERSION"
+          pahole_version=$(pahole --version 2>/dev/null | head -n1); [ -z "$pahole_version" ] && echo "pahole版本：未安装" || echo "pahole版本：$pahole_version"
+          
           export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
+          export CCACHE_NOHASHDIR="true"
+          export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
-
-          cd kernel_workspace/common
+          export CCACHE_MAXSIZE="3G"
+          
+          cd kernel_workspace
           if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
-            git clone --depth=1 https://github.com/cctv18/sched_ext.git
-            cp -r ./sched_ext/* ./kernel/sched
-            rm -rf ./sched_ext
+            git clone https://github.com/cctv18/sched_ext.git
+            rm -rf ./sched_ext/.git
+            rm -rf ./sched_ext/README.md
+            cp -r ./sched_ext/* ./common/kernel/sched
           fi
-
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android &
-          wait
-
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig all
+          cd common
+          #在构建内核的同时清除不必要的.NET, Android NDK, Haskell, CodeQL运行库，清理空间且不阻塞后续步骤运行
+          sudo rm -rf /usr/share/dotnet &
+          sudo rm -rf /usr/local/lib/android &
+          sudo rm -rf /opt/ghc &
+          sudo rm -rf /opt/hostedtoolcache/CodeQL &
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig Image
           echo "内核编译完成！"
+          echo "ccache状态："
           ccache -s
+          echo "编译后空间:"
           df -h
-
+          
       - name: 应用KPM并修补内核
         if: ${{ github.event.inputs.kpm_enable == 'true' && github.event.inputs.ksu_type == 'sukisu' }}
         run: |
