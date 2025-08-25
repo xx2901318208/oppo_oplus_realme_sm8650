@@ -74,15 +74,7 @@ on:
         description: '内核后缀(留空默认,开头别加连字符,勿加空格等影响指令运行的保留字符)'
         required: true
         type: string
-        default: 'android14-11-o-g31602dff16cb'
-      lz4k_enable:
-        description: '是否启用LZ4KD ZRAM优化(推荐开启)'
-        required: true
-        type: choice
-        default: 'true'
-        options:
-          - 'true'
-          - 'false'
+        default: 'android14-11-o-g31602dff16cb'      
 
 jobs:
   build:
@@ -241,14 +233,7 @@ jobs:
             ls -l ../SukiSU_patch/hooks/syscall_hooks.patch || echo "❗ syscall_hooks.patch 补丁文件不存在"
             ls -l ../SukiSU_patch/69_hide_stuff.patch || echo "❗ 69_hide_stuff.patch 补丁文件不存在"
             cp ../SukiSU_patch/hooks/syscall_hooks.patch .
-            cp ../SukiSU_patch/69_hide_stuff.patch .
-            if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
-              ls -lR ../SukiSU_patch/other/zram/lz4k || echo "❗ ZRAM 补丁目录不存在"
-              cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./include/linux/
-              cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./lib/
-              cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./crypto/
-              cp -r ../SukiSU_patch/other/zram/lz4k_oplus/* ./lib/
-            fi
+            cp ../SukiSU_patch/69_hide_stuff.patch .            
             patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
             patch -p1 < syscall_hooks.patch || true
             patch -p1 < 69_hide_stuff.patch || true
@@ -268,38 +253,7 @@ jobs:
             patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
             patch -p1 -N -F 3 < scope_min_manual_hooks_v1.4.patch || true
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
-          fi
-
-      - name: 应用zram相关补丁
-        if: ${{ github.event.inputs.lz4k_enable == 'true' }}
-        run: |
-          set -e
-          cd kernel_workspace/common
-          PATCH_LIST=(
-            "lz4kd"
-            "lz4k_oplus"
-          )
-          PATCH_BASE=../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}
-          for PATCH_NAME in "${PATCH_LIST[@]}"; do
-            PATCH_FILE="$PATCH_BASE/$PATCH_NAME.patch"
-            LOCAL_PATCH="./$PATCH_NAME.patch"
-            if [[ -f "$PATCH_FILE" ]]; then
-              echo "🟢 应用补丁: $PATCH_NAME"
-              cp "$PATCH_FILE" "$LOCAL_PATCH"
-              patch -p1 -F 3 < "$LOCAL_PATCH" || echo "⚠️ $PATCH_NAME patch失败(已应用/冲突可忽略)"
-            else
-              echo "❗ 未找到$PATCH_NAME补丁 (kernel version ${{ env.KERNEL_VERSION }})"
-              echo "尝试从备用源下载补丁..."
-              mkdir -p "$PATCH_BASE"
-              wget -O "$PATCH_FILE" "https://raw.githubusercontent.com/FurLC/Action_OnePlus_KernelSU_SUSFS/main/$PATCH_NAME.patch" || echo "⚠️ 下载补丁失败，跳过"
-              if [[ -f "$PATCH_FILE" ]]; then
-                cp "$PATCH_FILE" "$LOCAL_PATCH"
-                patch -p1 -F 3 < "$LOCAL_PATCH" || echo "⚠️ $PATCH_NAME patch失败(已应用/冲突可忽略)"
-              fi
-            fi
-          done
-          echo "补丁应用完成，检查修改的文件："
-          ls -l lib/Kconfig lib/Makefile crypto/Kconfig crypto/Makefile drivers/block/zram/Kconfig drivers/block/zram/zcomp.c kernel/module/main.c || echo "❗ 部分文件未找到，可能补丁未正确应用"
+          fi      
 
       - name: 添加 KSU & SUSFS 配置项
         run: |
@@ -387,29 +341,7 @@ jobs:
           echo "CONFIG_ARM_TRUSTZONE=y" >> ./arch/arm64/configs/gki_defconfig
           echo "CONFIG_CRYPTO_DEV_QCOM_RNG=y" >> ./arch/arm64/configs/gki_defconfig
           echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> ./arch/arm64/configs/gki_defconfig
-          
-          echo "配置 ZRAM ："
-          if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
-            echo "CONFIG_CRYPTO_LZ4KD=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ZRAM_WRITEBACK=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ZSMALLOC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4HC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4K=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_842=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_COMPRESSION=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_LZ4=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_LZ4HC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_LZ4KD=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_F2FS_FS_ZSTD=y" >> ./arch/arm64/configs/gki_defconfig
-          fi
-          sed -i 's/check_defconfig//' ./build.config.gki
-          if [[ "${{ github.event.inputs.lz4k_enable }}" == "true" ]]; then
-            echo "检查 ZRAM 配置："
-            grep CONFIG_ZRAM ./arch/arm64/configs/gki_defconfig || echo "CONFIG_ZRAM 未设置"
-            grep CONFIG_CRYPTO_LZ4KD ./arch/arm64/configs/gki_defconfig || echo "CONFIG_CRYPTO_LZ4KD 未设置"
-          fi
-
+          sed -i 's/check_defconfig//' ./build.config.gki          
       - name: 启用网络功能增强优化配置
         run: |
           cd kernel_workspace/common
@@ -583,79 +515,13 @@ jobs:
           else
             zip -r ../AnyKernel3_${{ env.KSU_TYPENAME }}_${{ env.KSUVER }}_${{ env.FEIL }}_${{ env.KERNEL_NAME }}.zip ./*
           fi
-      - name: 下载并打包 ZRAM 内核模块
-        if: ${{ github.event.inputs.lz4k_enable == 'true' }}
-        run: |
-          set -e
-          cd kernel_workspace
-          sudo apt install -y unzip
-          # 创建 ZRAM-Module 目录
-          mkdir -p ZRAM-Module/zram
-          # 查找 zram.ko 文件
-          zram_paths=(
-            "./common/out/drivers/block/zram/zram.ko"
-            "./common/out/dist/zram.ko"
-            "./common/out/vendor/oplus/kernel/mm/zram.ko"
-            "./common/out/device/qcom/${{ env.CPU }}-kernel/vendor_dlkm/zram.ko"
-            "./common/out/device/qcom/${{ env.CPU }}-kernel/system_dlkm/flatten/lib/modules/zram.ko"
-            "./common/out/mm/oplus_mm/hybridswap_zram/zram.ko"
-            "./common/out/mm/oplus_bsp_hybridswap_zram/zram.ko"
-          )
-          target="./ZRAM-Module/zram/zram.ko"
-          zram_path=""
-          for path in "${zram_paths[@]}"; do
-            if [[ -f "$path" ]]; then
-              zram_path="$path"
-              break
-            fi
-          done
-          if [[ -z "$zram_path" ]]; then
-            zram_path=$(find ./common -name "zram.ko" | head -n 1)
-          fi
-          if [[ -n "$zram_path" && -f "$zram_path" ]]; then
-            echo "ZRAM module file located at: $zram_path"
-            mkdir -p "$(dirname "$target")"
-            if [[ "$(realpath "$zram_path")" != "$(realpath "$target")" ]]; then
-              cp "$zram_path" "$target"
-              echo "ZRAM module copied to: $target"
-            else
-              echo "源文件与目标相同，跳过复制"
-            fi
-          else
-            echo "未找到 zram.ko 文件，尝试重新编译模块..."
-            cd common
-            make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out modules
-            zram_path=$(find out/ -name "zram.ko" | head -n 1)
-            if [[ -n "$zram_path" && -f "$zram_path" ]]; then
-              echo "ZRAM module file located at: $zram_path"
-              mkdir -p "$(dirname "$target")"
-              cp "$zram_path" "$target"
-              echo "ZRAM module copied to: $target"
-            else
-              echo "仍未找到 zram.ko 文件，构建失败"
-              exit 1
-            fi
-            cd ..
-          fi
-          # 打包 ZRAM 模块为 ZRAM-Module.zip
-          cd ZRAM-Module
-          zip -r ../ZRAM-Module.zip ./*
-          echo "ZRAM-Module.zip created at: $(pwd)/../ZRAM-Module.zip"
-          cd ..
+
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
         with:
           name: Kernel_ZIP_Artifacts
           path: |
-            ${{ github.workspace }}/kernel_workspace/AnyKernel3_*.zip
-            ${{ github.workspace }}/kernel_workspace/ZRAM-Module.zip
-
-      - name: 上传ZRAM-Module
-        uses: actions/upload-artifact@v4
-        if: ${{ github.event.inputs.lz4k_enable == 'true' }}
-        with:
-          name: ZRAM-Module_${{ env.KERNEL_VERSION }}_${{ env.FEIL }}
-          path: ${{ github.workspace }}/kernel_workspace/ZRAM-Module/*
+            ${{ github.workspace }}/kernel_workspace/AnyKernel3_*.zip            
 
   release:
     needs: build
@@ -671,11 +537,6 @@ jobs:
           name: Kernel_ZIP_Artifacts
           path: ./release_zips
 
-      - name: 下载 ZRAM 工件
-        uses: actions/download-artifact@v4
-        with:
-          name: ZRAM-Module_${{ env.KERNEL_VERSION }}_${{ env.FEIL }}
-          path: ./release_zips
 
       - name: 设置环境变量
         run: |
