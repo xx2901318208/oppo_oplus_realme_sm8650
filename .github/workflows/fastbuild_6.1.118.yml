@@ -9,13 +9,9 @@ env:
   KERNEL_NAME: 'android14-11-o-g31602dff16cb'
   KERNELSU_VARIANT: 'SukiSU-Ultra'
   KERNELSU_BRANCH: 'susfs-main'
-  # ZRAM基础配置（修复：改用GitHub API地址）
   ZRAM_PATCH_REPO: https://github.com/SukiSU-Ultra/SukiSU_patch.git
-  ZRAM_MODULE_API: https://api.github.com/repos/FurLC/ZRAM-Module/releases/latest  # 修复：用API而非HTML页面
-  ZRAM_ALGORITHM_PATHS: |
-    ./kernel_workspace/common/include/linux/
-    ./kernel_workspace/common/lib/
-    ./kernel_workspace/common/crypto/
+  ZRAM_MODULE_API: https://api.github.com/repos/FurLC/ZRAM-Module/releases/latest
+  KANDROID_VERSION: 'android14'
 
 on:
   workflow_dispatch:
@@ -78,11 +74,10 @@ on:
           - 'true'
           - 'false'
       kernel_suffix:
-        description: '内核后缀(留空默认,开头别加连字符,勿加空格等影响指令运行的保留字符)'
+        description: '内核后缀(留空时触发随机后缀默认)'
         required: true
         type: string
         default: 'android14-11-o-g31602dff16cb'
-      # ZRAM开关参数（与参考脚本一致）
       ZRAM:
         type: boolean
         description: "是否添加更多ZRAM算法(lz4kd/lz4k_oplus,适配6.1内核)"
@@ -106,15 +101,12 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             curl bison flex make binutils git perl gcc python3 \
             python-is-python3 bc libssl-dev libelf-dev \
-            bc aria2 zip unzip ccache jq  # 修复：确保安装jq（解析JSON用）
-          echo "检查当前 Git 版本："
-          git --version
+            bc aria2 zip unzip ccache jq  
           echo "升级 Git 到最新版本..."
           sudo apt-get install -y software-properties-common
           sudo add-apt-repository ppa:git-core/ppa -y
           sudo apt update
           sudo apt-get install -y git
-          echo "升级后的 Git 版本："
           git --version
 
       - name: 配置ccache目录
@@ -145,13 +137,11 @@ jobs:
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="${{ env.CCACHE_MAXSIZE }}"
           mkdir -p "$CCACHE_DIR"
-          echo "配置ccache缓存大小为: $CCACHE_MAXSIZE"
           ccache -M "$CCACHE_MAXSIZE"
           ccache -o compression=true
           echo "ccache初始状态:"
           ccache -s
           if [ "${{ steps.ccache-restore.outputs.cache-hit }}" == 'true' ]; then
-            echo "ccache缓存命中详情:"
             ccache -sv
           fi
 
@@ -160,27 +150,26 @@ jobs:
           rm -rf kernel_workspace
           mkdir kernel_workspace
           cd kernel_workspace
-          echo "正在克隆源码仓库..."
+          # 克隆内核源码
           aria2c -s16 -x16 -k1M https://github.com/cctv18/android_kernel_common_oneplus_sm8650/archive/refs/heads/oneplus/sm8650_v_15.0.0_oneplus12_6.1.118.zip -o common.zip
           unzip -q common.zip
           mv "android_kernel_common_oneplus_sm8650-oneplus-sm8650_v_15.0.0_oneplus12_6.1.118" common
           rm -rf common.zip
-          echo "正在克隆llvm-Clang20工具链..."
+          # 克隆Clang工具链
           rm -rf clang20
           mkdir -p clang20
           aria2c -s16 -x16 -k1M https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang20-r547379/clang-r547379.zip -o clang.zip
           unzip -q clang.zip -d clang20
           rm -rf clang.zip
-          echo "正在克隆构建工具..."
+          # 克隆构建工具
           rm -rf build-tools
           aria2c -s16 -x16 -k1M https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang20-r547379/build-tools.zip -o build-tools.zip
           unzip -q build-tools.zip
           rm -rf build-tools.zip
-          echo "正在去除 ABI 保护 & 去除 dirty 后缀..."
+          # 移除ABI保护和dirty后缀（预处理）
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
             sed -i 's/ -dirty//g' "$f"
-            sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
 
       - name: 添加KernelSU
@@ -188,38 +177,31 @@ jobs:
         run: |
           cd kernel_workspace
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
-            echo "正在配置SukiSU Ultra..."
+            echo "配置SukiSU Ultra..."
             curl -LSs "https://raw.githubusercontent.com/ShirkNeko/SukiSU-Ultra/refs/heads/main/kernel/setup.sh" | bash -s susfs-main
             cd ./KernelSU
             GIT_COMMIT_HASH=$(git rev-parse --short=8 HEAD)
-            echo "当前提交哈希: $GIT_COMMIT_HASH"
-            export KSU_VERSION=$KSU_VERSION
+            # 获取KSU API版本
             for i in {1..3}; do
               KSU_API_VERSION=$(curl -s "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/susfs-main/kernel/Makefile" | 
-                grep -m1 "KSU_VERSION_API :=" | 
-                awk -F'= ' '{print $2}' | 
-                tr -d '[:space:]')
+                grep -m1 "KSU_VERSION_API :=" | awk -F'= ' '{print $2}' | tr -d '[:space:]')
               [ -n "$KSU_API_VERSION" ] && break || sleep 1
             done
             [ -z "$KSU_API_VERSION" ] && KSU_API_VERSION="3.1.7"
             echo "KSU_API_VERSION=$KSU_API_VERSION" >> $GITHUB_ENV
+            # 写入版本定义
             VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\\$1-'"$GIT_COMMIT_HASH"$'@1263599071\nendef\n\nKSU_VERSION_API := '"$KSU_API_VERSION"$'\nKSU_VERSION_FULL := v'"$KSU_API_VERSION"$'-'"$GIT_COMMIT_HASH"$'@1263599071'
             sed -i '/define get_ksu_version_full/,/endef/d' kernel/Makefile
             sed -i '/KSU_VERSION_API :=/d' kernel/Makefile
             sed -i '/KSU_VERSION_FULL :=/d' kernel/Makefile
-            awk -v def="$VERSION_DEFINITIONS" '
-              /REPO_OWNER :=/ {print; print def; inserted=1; next}
-              1
-              END {if (!inserted) print def}
-            ' kernel/Makefile > kernel/Makefile.tmp && mv kernel/Makefile.tmp kernel/Makefile
+            awk -v def="$VERSION_DEFINITIONS" '/REPO_OWNER :=/ {print; print def; inserted=1; next} 1; END {if (!inserted) print def}' kernel/Makefile > kernel/Makefile.tmp && mv kernel/Makefile.tmp kernel/Makefile
+            # 计算KSU版本号
             KSU_VERSION=$(expr $(git rev-list --count main) + 10700 2>/dev/null || echo 114514)
             echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
             echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
-            grep -A10 "REPO_OWNER" kernel/Makefile
-            grep "KSU_VERSION_FULL" kernel/Makefile
-            echo "SukiSU版本号: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@1263599071"
+            echo "SukiSU版本: v${KSU_API_VERSION}-${GIT_COMMIT_HASH}@1263599071"
           else
-            echo "正在配置KernelSU Next..."
+            echo "配置KernelSU Next..."
             curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/next-susfs/kernel/setup.sh" | bash -s next-susfs
             cd KernelSU-Next
             KSU_VERSION=$(expr $(curl -sI "https://api.github.com/repos/pershoot/KernelSU-Next/commits?sha=next&per_page=1" | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p') "+" 10200)
@@ -231,39 +213,30 @@ jobs:
       - name: 应用 KernelSU & SUSFS 补丁
         run: |
           cd kernel_workspace
-          # 克隆SukiSU_patch（ZRAM补丁来源）
+          # 克隆ZRAM所需补丁仓库
           if [[ ${{ github.event.inputs.ZRAM }} == "true" ]]; then
-            echo "克隆 SukiSU_patch 仓库（用于ZRAM补丁）..."
             git clone --depth=1 ${{ env.ZRAM_PATCH_REPO }} || git clone ${{ env.ZRAM_PATCH_REPO }}
           fi
 
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then     
-            echo "克隆 susfs4ksu 仓库..."
+            # 克隆SUSFS相关仓库
             git clone --depth=1 https://github.com/ShirkNeko/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }} || git clone https://github.com/ShirkNeko/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
-            echo "克隆 SukiSU_patch 仓库（用于SUSFS补丁）..."
             [ -d ./SukiSU_patch ] || git clone --depth=1 https://github.com/SukiSU-Ultra/SukiSU_patch.git || git clone https://github.com/SukiSU-Ultra/SukiSU_patch.git
-            echo "正在添加SukiSU Ultra补丁..."
-            ls -ld ./susfs4ksu || echo "❗ susfs4ksu 目录不存在"
-            ls -ld ./SukiSU_patch || echo "❗ SukiSU_patch 目录不存在"
+            # 应用SUSFS补丁
             cd common
-            ls -l ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || echo "❗ SUSFS 补丁文件不存在"
             cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch .
             cp ../susfs4ksu/kernel_patches/fs/* ./fs/
             cp ../susfs4ksu/kernel_patches/include/linux/* ./include/linux/
-            ls -l ../SukiSU_patch/hooks/syscall_hooks.patch || echo "❗ syscall_hooks.patch 补丁文件不存在"
-            ls -l ../SukiSU_patch/69_hide_stuff.patch || echo "❗ 69_hide_stuff.patch 补丁文件不存在"
             cp ../SukiSU_patch/hooks/syscall_hooks.patch .
             cp ../SukiSU_patch/69_hide_stuff.patch .            
             patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
             patch -p1 < syscall_hooks.patch || true
             patch -p1 < 69_hide_stuff.patch || true
-            echo "✅ SUSFS 和 syscall_hooks patch 应用完成"
+            echo "✅ SUSFS 补丁应用完成"
           else
-            echo "正在添加KernelSU Next补丁..."
+            # 应用KernelSU Next补丁
             git clone --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }} || git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
             git clone --depth=1 https://github.com/WildKernels/kernel_patches.git || git clone https://github.com/WildKernels/kernel_patches.git
-            ls -ld ./susfs4ksu || echo "❗ susfs4ksu 目录不存在"
-            ls -ld ./kernel_patches || echo "❗ kernel_patches 目录不存在"
             cp ./susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
             cp ./susfs4ksu/kernel_patches/fs/* ./common/fs/
             cp ./susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
@@ -274,249 +247,184 @@ jobs:
             patch -p1 -N -F 3 < scope_min_manual_hooks_v1.4.patch || true
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           fi      
-
-      # ZRAM步骤1：复制算法头文件/源码（与参考脚本对齐）
       - name: Copy ZRAM Algorithm Files (if enabled)
         if: ${{ github.event.inputs.ZRAM == 'true' }}
         run: |
           cd kernel_workspace
           [ -d ./SukiSU_patch ] || git clone --depth=1 ${{ env.ZRAM_PATCH_REPO }}
-          
-          echo "正在复制 ZRAM 算法头文件与源码（lz4k/lz4k_oplus）..."
+          # 复制lz4k/lz4k_oplus算法文件
           cp -r ./SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux/
           cp -r ./SukiSU_patch/other/zram/lz4k/lib/* ./common/lib/
           cp -r ./SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto/
           cp -r ./SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
           echo "✅ ZRAM 算法文件复制完成"
-
-      # ZRAM步骤2：应用ZRAM补丁（与参考脚本对齐）
       - name: Apply ZRAM Patches (if enabled)
         if: ${{ github.event.inputs.ZRAM == 'true' }}
         run: |
           cd kernel_workspace/common
           ZRAM_PATCH_DIR="../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}"
-          
-          if [ -f "$ZRAM_PATCH_DIR/lz4kd.patch" ]; then
-            cp "$ZRAM_PATCH_DIR/lz4kd.patch" ./
-            echo "正在打 lz4kd 补丁..."
-            patch -p1 -F 3 < lz4kd.patch || true
-            echo "✅ lz4kd_patch 完成"
-          else
-            echo "❌ 未找到 lz4kd.patch（${{ env.KERNEL_VERSION }}版本）"
-            exit 1
-          fi
-          
-          if [ -f "$ZRAM_PATCH_DIR/lz4k_oplus.patch" ]; then
-            cp "$ZRAM_PATCH_DIR/lz4k_oplus.patch" ./
-            echo "正在打 lz4k_oplus 补丁..."
-            patch -p1 -F 3 < lz4k_oplus.patch || true
-            echo "✅ lz4k_oplus_patch 完成"
-          else
-            echo "❌ 未找到 lz4k_oplus.patch（${{ env.KERNEL_VERSION }}版本）"
-            exit 1
-          fi
+          # 应用lz4kd补丁
+          cp "$ZRAM_PATCH_DIR/lz4kd.patch" ./
+          echo "打 lz4kd 补丁..."
+          patch -p1 -F 3 < lz4kd.patch || true
+          echo "✅ lz4kd_patch 完成"
+          # 应用lz4k_oplus补丁
+          cp "$ZRAM_PATCH_DIR/lz4k_oplus.patch" ./
+          echo "打 lz4k_oplus 补丁..."
+          patch -p1 -F 3 < lz4k_oplus.patch || true
+          echo "✅ lz4k_oplus_patch 完成"
 
       - name: 添加 KSU & SUSFS 配置项
         run: |
           cd kernel_workspace/common
-          echo "CONFIG_KSU=y" >> ./arch/arm64/configs/gki_defconfig
+          CONFIG_FILE=./arch/arm64/configs/gki_defconfig
+          # KSU基础配置
+          echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
+          # KPM配置
           if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
-            echo "CONFIG_KPM=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KPM=y" >> "$CONFIG_FILE"
           fi
+          # HOOK配置
           if [ "${{ github.event.inputs.hook_method }}" == "kprobes" ]; then
-            echo "正在开启kprobes钩子..."
-            echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_MANUAL_HOOK=n" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_KPROBES_HOOK=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_SUSFS_SUS_SU=y" >> "$CONFIG_FILE"
+            echo "CONFIG_KPROBES=y" >> "$CONFIG_FILE"
+            echo "CONFIG_KSU_KPROBES_HOOK=y" >> "$CONFIG_FILE"
           else
-            echo "正在开启manual钩子..."
-            echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_KSU_MANUAL_HOOK=y" >> "$CONFIG_FILE"
+            echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> "$CONFIG_FILE"
           fi
-          echo "CONFIG_KSU_SUSFS=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS_AUTO_KSTAT_SUPPORT=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=n" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./arch/arm64/configs/gki_defconfig   
-          echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP_NF_TARGET_ECN=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP_ECN=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TCP_ECN=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IPV6_ECN=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TMPFS_XATTR=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_RCU_TRACE=n" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DRM_MSM_DSI_165HZ=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_QCOM_KGSL_165HZ_GPU_FREQ=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_QCOM_KGSL_DYNAMIC_FPS=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SCHED_CLASS_EXT=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_BPF_JIT_ALWAYS_ON=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEBUG_INFO_BTF=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_AVC_STATS=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=0" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_SIDTAB_HASH_BITS=9" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_SECURITY_SELINUX_SID2STR_CACHE_SIZE=256" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_PSCI=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_PSCI_FW=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_SCPI_PROTOCOL=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_SCPI_POWER_DOMAIN=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEVTMPFS=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEVTMPFS_MOUNT=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_DEVTMPFS_SAFE=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ION=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ION_SYSTEM_HEAP=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ION_CARVEOUT_HEAP=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ION_CHUNK_HEAP=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ION_CMA_HEAP=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_USER_API_HASH=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_USER_API_SKCIPHER=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_USER_API_AEAD=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_USER_API_RNG=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_ECDSA=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM2=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM3_GENERIC=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM4_ARM64_CE=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM4_ARM64_CE_BLK=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_SM4_ARM64_NEON_BLK=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_TEE=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_OPTEE=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_OPTEE_BENCHMARK=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_OPTEE_APDU=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_QCOM_QSEECOM=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_ARM_TRUSTZONE=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CRYPTO_DEV_QCOM_RNG=y" >> ./arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> ./arch/arm64/configs/gki_defconfig
-          sed -i 's/check_defconfig//' ./build.config.gki          
-          
-          # ZRAM配置项（与参考脚本一致）
+          # SUSFS配置
+          echo "CONFIG_KSU_SUSFS=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=n" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> "$CONFIG_FILE"
+          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> "$CONFIG_FILE"
+          # 基础网络/存储配置
+          echo "CONFIG_IP_NF_TARGET_TTL=y" >> "$CONFIG_FILE"
+          echo "CONFIG_IP6_NF_TARGET_HL=y" >> "$CONFIG_FILE"
+          echo "CONFIG_IP_ECN=y" >> "$CONFIG_FILE"
+          echo "CONFIG_TCP_ECN=y" >> "$CONFIG_FILE"
+          echo "CONFIG_IPV6_ECN=y" >> "$CONFIG_FILE"
+          echo "CONFIG_TMPFS_XATTR=y" >> "$CONFIG_FILE"
+          echo "CONFIG_TMPFS_POSIX_ACL=y" >> "$CONFIG_FILE"
+          echo "CONFIG_DRM_MSM_DSI_165HZ=y" >> "$CONFIG_FILE"
+          echo "CONFIG_QCOM_KGSL_165HZ_GPU_FREQ=y" >> "$CONFIG_FILE"
+          echo "CONFIG_SCHED_CLASS_EXT=y" >> "$CONFIG_FILE"
+          echo "CONFIG_BPF_JIT_ALWAYS_ON=y" >> "$CONFIG_FILE"
+          echo "CONFIG_DEBUG_INFO_BTF=y" >> "$CONFIG_FILE"
+          # ZRAM配置（启用时添加）
           if [[ ${{ github.event.inputs.ZRAM }} == "true" ]]; then
-            echo "正在添加 ZRAM 配置项（参考SukiSU Ultra逻辑）..."
-            echo "CONFIG_CRYPTO_LZ4HC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4K=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4KD=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_842=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ZRAM_WRITEBACK=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_LZ4V2_COMPRESS=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_LZ4V2_HC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_LZ4V2_DEBUG=n" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_ZRAM_LZ4V2=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CRYPTO_LZ4HC=y" >> "$CONFIG_FILE"
+            echo "CONFIG_CRYPTO_LZ4K=y" >> "$CONFIG_FILE"
+            echo "CONFIG_CRYPTO_LZ4KD=y" >> "$CONFIG_FILE"
+            echo "CONFIG_CRYPTO_842=y" >> "$CONFIG_FILE"
+            echo "CONFIG_CRYPTO_LZ4K_OPLUS=y" >> "$CONFIG_FILE"
+            echo "CONFIG_ZRAM_WRITEBACK=y" >> "$CONFIG_FILE"
+            echo "CONFIG_LZ4V2_COMPRESS=y" >> "$CONFIG_FILE"
+            echo "CONFIG_LZ4V2_HC=y" >> "$CONFIG_FILE"
+            echo "CONFIG_ZRAM_LZ4V2=y" >> "$CONFIG_FILE"
           fi
+          # 移除构建审查
+          sed -i 's/check_defconfig//' ./build.config.gki
 
       - name: 启用网络功能增强优化配置
+        if: ${{ github.event.inputs.better_net == 'true' }}
         run: |
           cd kernel_workspace/common
-          if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
-            echo "CONFIG_BPF_STREAM_PARSER=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_NETFILTER_XT_SET=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_MAX=65534" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_BITMAP_IP=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_BITMAP_IPMAC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_BITMAP_PORT=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IP=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPMARK=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPPORT=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPPORTIP=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPPORTNET=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_IPMAC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_MAC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETPORTNET=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NET=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETNET=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETPORT=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_HASH_NETIFACE=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP_SET_LIST_SET=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP6_NF_NAT=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./arch/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE=.*/CONFIG_CRYPTO_AES_ARM64_CE=y/' ./arch/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_SHA2_ARM64_CE=.*/CONFIG_CRYPTO_SHA2_ARM64_CE=y/' ./arch/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_SHA512_ARM64_CE=.*/CONFIG_CRYPTO_SHA512_ARM64_CE=y/' ./arch/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_POLYVAL_ARM64_CE=.*/CONFIG_CRYPTO_POLYVAL_ARM64_CE=y/' ./arch/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE_BLK=.*/CONFIG_CRYPTO_AES_ARM64_CE_BLK=y/' ./arch/arm64/configs/gki_defconfig
-            sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' ./arch/arm64/configs/gki_defconfig
-            wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
-            patch -p1 -F 3 < config.patch || true
+          CONFIG_FILE=./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_BPF_STREAM_PARSER=y" >> "$CONFIG_FILE"
+          echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> "$CONFIG_FILE"
+          echo "CONFIG_NETFILTER_XT_SET=y" >> "$CONFIG_FILE"
+          echo "CONFIG_IP_SET=y" >> "$CONFIG_FILE"
+          echo "CONFIG_IP_SET_MAX=65534" >> "$CONFIG_FILE"
+          echo "CONFIG_IP_SET_BITMAP_IP=y" >> "$CONFIG_FILE"
+          echo "CONFIG_IP_SET_HASH_IP=y" >> "$CONFIG_FILE"
+          echo "CONFIG_IP6_NF_NAT=y" >> "$CONFIG_FILE"
+          echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> "$CONFIG_FILE"
+          # 修复加密配置
+          sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE=.*/CONFIG_CRYPTO_AES_ARM64_CE=y/' "$CONFIG_FILE"
+          sed -i 's/CONFIG_CRYPTO_SHA2_ARM64_CE=.*/CONFIG_CRYPTO_SHA2_ARM64_CE=y/' "$CONFIG_FILE"
+          sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' "$CONFIG_FILE"
+          # 应用额外配置补丁
+          wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
+          patch -p1 -F 3 < config.patch || true
+
+      - name: 添加 BBR 拥塞控制算法
+        if: ${{ github.event.inputs.bbr_enable == 'true' || github.event.inputs.bbr_enable == 'default' }}
+        run: |
+          cd kernel_workspace/common
+          CONFIG_FILE=./arch/arm64/configs/gki_defconfig
+          echo "CONFIG_TCP_CONG_ADVANCED=y" >> "$CONFIG_FILE"
+          echo "CONFIG_TCP_CONG_BBR=y" >> "$CONFIG_FILE"
+          echo "CONFIG_TCP_CONG_CUBIC=y" >> "$CONFIG_FILE"
+          echo "CONFIG_TCP_CONG_VEGAS=y" >> "$CONFIG_FILE"
+          # 设置默认算法
+          if [[ "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
+            echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> "$CONFIG_FILE"
+          else
+            echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> "$CONFIG_FILE"
           fi
 
-      - name: 添加 BBR 等一系列拥塞控制算法
+      - name: 启用三星SSG IO调度器 & Re-Kernel
+        if: ${{ github.event.inputs.ssg_rekernel_enable == 'true' }}
         run: |
           cd kernel_workspace/common
-          if [[ "${{ github.event.inputs.bbr_enable }}" == "true" || "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
-            echo "正在添加BBR等拥塞控制算法..."
-            echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_BBR=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_CUBIC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_VEGAS=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_NV=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_WESTWOOD=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_HTCP=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_BRUTAL=y" >> ./arch/arm64/configs/gki_defconfig
-            if [[ "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
-              echo "正在将BBR设为默认拥塞控制算法..."
-              echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./arch/arm64/configs/gki_defconfig
-            else
-              echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> ./arch/arm64/configs/gki_defconfig
-            fi
-          fi
-
-      - name: 启用三星SSG IO调度器
+          CONFIG_FILE=./arch/arm64/configs/gki_defconfig
+          # SSG调度器
+          echo "CONFIG_MQ_IOSCHED_SSG=y" >> "$CONFIG_FILE"
+          echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> "$CONFIG_FILE"
+          # Re-Kernel
+          echo "CONFIG_REKERNEL=y" >> "$CONFIG_FILE"
+          # EEVDF调度器
+          echo "CONFIG_SCHED_EEVDF=y" >> "$CONFIG_FILE"
+      - name: Set Kernel Suffix (Custom or Random Official-like)
         run: |
           cd kernel_workspace/common
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "true" ]]; then
-            echo "正在启用三星SSG IO调度器..."
-            echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./arch/arm64/configs/gki_defconfig
-          fi
-
-      - name: 启用Re-Kernel支持
-        run: |
-          cd kernel_workspace/common
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "true" ]]; then
-            echo "正在启用Re-Kernel支持..."
-            echo "CONFIG_REKERNEL=y" >> ./arch/arm64/configs/gki_defconfig
-          fi
-
-      - name: 启用 EEVDF 调度器
-        run: |
-          cd kernel_workspace/common
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "true" ]]; then
-            echo "正在启用EEVDF支持..."
-            echo "CONFIG_SCHED_EEVDF=y" >> ./arch/arm64/configs/gki_defconfig
-          fi
-
-      - name: 添加制作名称
-        run: |
-          cd kernel_workspace/common
-          echo "替换内核版本后缀..."
-          if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            echo "当前内核版本后缀：${{ github.event.inputs.kernel_suffix }}"
-            for f in ./scripts/setlocalversion; do
-              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ github.event.inputs.kernel_suffix }}\"|" "$f"
+          SUFFIX_INPUT="${{ github.event.inputs.kernel_suffix }}"
+          KANDROID_VERSION="${{ env.KANDROID_VERSION }}"  
+          FAST_BUILD="true"  
+          for path in ./scripts/setlocalversion; do
+            [ -f "$path" ] || { echo "⚠️ $path 不存在，跳过"; continue; }
+            echo "处理版本文件：$path"
+            sed -i 's/ -dirty//g' "$path"
+            sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$path"
+          done
+          if [[ -n "$SUFFIX_INPUT" ]]; then
+            echo "使用用户自定义后缀：$SUFFIX_INPUT"
+            for path in ./scripts/setlocalversion; do
+              [ -f "$path" ] || continue
+              sed -i "s/^res=.*/res=\"-${KANDROID_VERSION}-${SUFFIX_INPUT}\"/" "$path"
+              chmod +x "$path"
             done
           else
-            echo "当前内核版本后缀：${{ env.KERNEL_NAME }}"
-            for f in ./scripts/setlocalversion; do
-              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
+            echo "用户未指定后缀，生成伪官方格式随机后缀..."
+            RANDOM_DIGIT=$(od -An -N1 -tu1 < /dev/urandom | tr -d '[:space:]' | awk '{print $1 % 11}')  # 0-10
+            RANDOM_HASH=$(od -An -N7 -tx1 /dev/urandom | tr -d ' \n')  # 7位十六进制哈希
+            RANDOM_SUFFIX="${RANDOM_DIGIT}-o-g${RANDOM_HASH}"  # 格式：数字-o-g哈希（如3-o-g1a2b3c4）
+            echo "生成随机后缀：$RANDOM_SUFFIX"
+            for path in ./scripts/setlocalversion; do
+              [ -f "$path" ] || continue
+              sed -i "s/^res=.*/res=\"-${KANDROID_VERSION}-${RANDOM_SUFFIX}\"/" "$path"
+              chmod +x "$path"
             done
+            cd ../../  # 返回kernel_workspace根目录
+            git add -A
+            git commit -m "Apply random official-like suffix: ${RANDOM_SUFFIX} (remove -dirty)"
+            echo "✅ 伪官方随机后缀提交完成"
           fi
+
+          echo -e "\n最终版本文件配置："
+          cat ./scripts/setlocalversion | grep -E 'res=|dirty'
 
       - name: 构建内核
         run: |
@@ -524,49 +432,42 @@ jobs:
           export PATH="/usr/lib/ccache:$PATH"
           export PATH="$WORKDIR/kernel_workspace/clang20/bin:$PATH"
           export PATH="$WORKDIR/kernel_workspace/build-tools/bin:$PATH"
+
           CLANG_DIR="$WORKDIR/kernel_workspace/clang20/bin"
-          CLANG_VERSION="$($CLANG_DIR/clang --version | head -n 1)"
-          LLD_VERSION="$($CLANG_DIR/ld.lld --version | head -n 1)"
-          echo "编译器信息:"
-          echo "Clang版本: $CLANG_VERSION"
-          echo "LLD版本: $LLD_VERSION"
-          pahole_version=$(pahole --version 2>/dev/null | head -n1); [ -z "$pahole_version" ] && echo "pahole版本：未安装" || echo "pahole版本：$pahole_version"
+          echo "Clang版本: $($CLANG_DIR/clang --version | head -n 1)"
+          echo "LLD版本: $($CLANG_DIR/ld.lld --version | head -n 1)"
+
           export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
-          export CCACHE_NOHASHDIR="true"
-          export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
-          export CCACHE_MAXSIZE="3G"
+
           cd kernel_workspace/common
           if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
             git clone --depth=1 https://github.com/cctv18/sched_ext.git || git clone https://github.com/cctv18/sched_ext.git
-            rm -rf ./sched_ext/.git
-            rm -rf ./sched_ext/README.md
             cp -r ./sched_ext/* ./kernel/sched
+            rm -rf ./sched_ext
           fi
+
           sudo rm -rf /usr/share/dotnet &
           sudo rm -rf /usr/local/lib/android &
-          sudo rm -rf /opt/ghc &
-          sudo rm -rf /opt/hostedtoolcache/CodeQL &
+
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig all
           echo "内核编译完成！"
-          echo "检查 zram.ko 是否存在："
-          find out/ -name "zram.ko" || echo "❗ zram.ko 未找到"
-          echo "ccache状态："
+
+          if [[ ${{ github.event.inputs.ZRAM }} == "true" ]]; then
+            find out/ -name "zram.ko" || echo "⚠️ ZRAM启用但未找到zram.ko"
+
           ccache -s
-          echo "编译后空间:"
           df -h
 
       - name: 应用KPM并修补内核
+        if: ${{ github.event.inputs.kpm_enable == 'true' && github.event.inputs.ksu_type == 'sukisu' }}
         run: |
-          if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
-            echo "正在应用KPM并修补内核..."
-            cd kernel_workspace/common/out/arch/arm64/boot
-            curl -LO https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.12.0/patch_linux
-            chmod +x patch_linux
-            ./patch_linux
-            rm -f Image
-            mv oImage Image
-          fi
+          cd kernel_workspace/common/out/arch/arm64/boot
+          curl -LO https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.12.0/patch_linux
+          chmod +x patch_linux
+          ./patch_linux
+          rm -f Image
+          mv oImage Image
 
       - name: 克隆 AnyKernel3 并打包
         run: |
@@ -575,24 +476,19 @@ jobs:
           git clone --depth=1 https://github.com/xx2901318208/AnyKernel3 || git clone https://github.com/xx2901318208/AnyKernel3
           rm -rf ./AnyKernel3/.git
           cd AnyKernel3
+
           cp ../common/out/arch/arm64/boot/Image ./Image
           if [[ ! -f ./Image ]]; then
-            echo "未找到内核镜像文件，构建可能出错"
+            echo "❌ 未找到内核镜像，构建失败"
             exit 1
           fi
-          if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
-            KSU_TYPENAME="SukiSU"
-          else
-            KSU_TYPENAME="KSUNext"
-          fi
-          echo "KSU_TYPENAME=$KSU_TYPENAME" >> $GITHUB_ENV
-          if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            zip -r ../AnyKernel3_${{ env.KSU_TYPENAME }}_${{ env.KSUVER }}_${{ env.FEIL }}_${{ github.event.inputs.kernel_suffix }}.zip ./*
-          else
-            zip -r ../AnyKernel3_${{ env.KSU_TYPENAME }}_${{ env.KSUVER }}_${{ env.FEIL }}_${{ env.KERNEL_NAME }}.zip ./*
-          fi
 
-      # 修复核心：ZRAM步骤3：用GitHub API下载模块模板并打包
+          KSU_TYPENAME=$([[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]] && echo "SukiSU" || echo "KSUNext")
+          echo "KSU_TYPENAME=$KSU_TYPENAME" >> $GITHUB_ENV
+
+          FINAL_SUFFIX=$([[ -n "${{ github.event.inputs.kernel_suffix }}" ]] && echo "${{ github.event.inputs.kernel_suffix }}" || echo "${{ env.KERNEL_NAME }}")
+          zip -r ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSUVER }}_${{ env.FEIL }}_${FINAL_SUFFIX}.zip ./*
+          
       - name: Download and Package ZRAM Module (if enabled)
         if: ${{ github.event.inputs.ZRAM == 'true' }}
         id: zram_find
@@ -600,23 +496,19 @@ jobs:
           set -e
           cd ${{ github.workspace }}
           sudo apt install -y unzip jq
-          
-          # 修复1：调用GitHub API获取最新Release资产（JSON格式）
+
           ZRAM_API_URL="${{ env.ZRAM_MODULE_API }}"
-          echo "通过GitHub API获取 ZRAM 模块模板：$ZRAM_API_URL"
+          echo "通过API获取ZRAM模块：$ZRAM_API_URL"
           
-          # 修复2：3次重试+API认证（避免限流）
           retries=3
           success=0
           download_url=""
           for i in $(seq 1 $retries); do
-            echo "第 $i 次尝试获取链接..."
-            # 加Authorization头提升API速率限制，仅读取公开仓库无需额外权限
+            echo "第 $i 次尝试..."
             download_url=$(curl -s \
               -H "Accept: application/vnd.github.v3+json" \
               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               "$ZRAM_API_URL" | \
-              # 精准过滤：只取含"ZRAM-Module-"且以.zip结尾的文件
               jq -r '.assets[] | select(.name | contains("ZRAM-Module-") and endswith(".zip")) | .browser_download_url' | head -n 1)
             
             if [ -n "$download_url" ] && [ "$download_url" != "null" ]; then
@@ -624,32 +516,24 @@ jobs:
               success=1
               break
             else
-              echo "⚠️ 获取失败，3秒后重试（API响应如下）："
-              curl -s -H "Accept: application/vnd.github.v3+json" "$ZRAM_API_URL" | jq '.assets[].name'  # 打印所有资产名便于调试
+              echo "⚠️ 获取失败，3秒后重试"
               sleep 3
             fi
           done
           
           if [ "$success" -ne 1 ]; then
-            echo "❌ 3次尝试失败，可能原因："
-            echo "1. GitHub API 限流（稍后重试）"
-            echo "2. FurLC/ZRAM-Module 无最新Release"
-            echo "3. 模块文件名格式变更（需检查仓库）"
+            echo "❌ ZRAM模块下载失败"
             echo "upload=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           
-          # 下载并解压模板
-          echo "下载 ZRAM 模块模板..."
-          wget -N "$download_url" || { echo "❌ 下载失败"; echo "upload=false" >> $GITHUB_OUTPUT; exit 0; }
+          wget -N "$download_url"
           ZRAM_ZIP=$(ls -t ZRAM-Module-*.zip | head -n 1)
           unzip -q "$ZRAM_ZIP" -d ZRAM-Module
           
-          # 查找编译生成的zram.ko
-          echo "查找内核编译的 zram.ko..."
+          echo "查找编译生成的zram.ko..."
           search_paths=(
             "./kernel_workspace/common/out"
-            "./kernel_workspace/device/qcom"
             "./kernel_workspace"
           )
           zram_path=""
@@ -659,26 +543,23 @@ jobs:
           done
           
           if [ -z "$zram_path" ]; then
-            echo "❌ 未找到 zram.ko（内核未编译ZRAM模块）"
+            echo "❌ 未找到zram.ko"
             echo "upload=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
-          # 替换模板中的zram.ko
+
           TARGET_KO="./ZRAM-Module/zram/zram.ko"
           mkdir -p "$(dirname "$TARGET_KO")"
           cp "$zram_path" "$TARGET_KO"
-          echo "✅ 已替换 ZRAM 模块（来源：$zram_path）"
+          echo "✅ ZRAM模块准备完成（来源：$zram_path）"
           echo "upload=true" >> $GITHUB_OUTPUT
-
-      # ZRAM步骤4：上传ZRAM模块（修复后）
       - name: Upload ZRAM Module (if enabled)
         if: ${{ github.event.inputs.ZRAM == 'true' && steps.zram_find.outputs.upload == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: ZRAM-Module_${{ env.KERNEL_VERSION }}_${{ env.FEIL }}_${{ github.event.inputs.kernel_suffix || env.KERNEL_NAME }}
           path: ./ZRAM-Module/*
-
+          
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
         with:
@@ -700,7 +581,6 @@ jobs:
           name: Kernel_ZIP_Artifacts
           path: ./release_zips
 
-      # 下载ZRAM模块（若启用）
       - name: Download ZRAM Module Artifact (if enabled)
         if: ${{ github.event.inputs.ZRAM == 'true' && needs.build.outputs.zram_upload == 'true' }}
         uses: actions/download-artifact@v4
@@ -708,45 +588,24 @@ jobs:
           name: ZRAM-Module_${{ env.KERNEL_VERSION }}_${{ env.FEIL }}_${{ github.event.inputs.kernel_suffix || env.KERNEL_NAME }}
           path: ./release_zips/ZRAM-Module
 
-      - name: 设置环境变量
+      - name: 设置环境变量（用于发布）
         run: |
-          if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            FULL_VERSION=${{ format('{0}.118-{1}', env.KERNEL_VERSION, github.event.inputs.kernel_suffix) }}
-            echo "FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
-            export FULL_VERSION=$FULL_VERSION
-          else
-            FULL_VERSION=${{ format('{0}.118-{1}', env.KERNEL_VERSION, env.KERNEL_NAME) }}
-            echo "FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
-            export FULL_VERSION=$FULL_VERSION
-          fi
+          FINAL_SUFFIX=$([[ -n "${{ github.event.inputs.kernel_suffix }}" ]] && echo "${{ github.event.inputs.kernel_suffix }}" || echo "${{ env.KERNEL_NAME }}")
+          FULL_VERSION="${{ env.KERNEL_VERSION }}.118-${FINAL_SUFFIX}"
+          echo "FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
           TIME="$(TZ='Asia/Shanghai' date +'%y%m%d%H%M%S')"
           TIME_FORM="$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')"
           echo "TIME=$TIME" >> $GITHUB_ENV
           echo "TIME_FORM=$TIME_FORM" >> $GITHUB_ENV
           TAG_HEAD="OPPO+OPlus+Realme-A15-build"
           echo "TAG_HEAD=$TAG_HEAD" >> $GITHUB_ENV
-          if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
-            KSU_BRANCH="SukiSU Ultra"
-          else
-            KSU_BRANCH="KernelSU Next"
-          fi
+          KSU_BRANCH=$([[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]] && echo "SukiSU Ultra" || echo "KernelSU Next")
           echo "KSU_BRANCH=$KSU_BRANCH" >> $GITHUB_ENV
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "true" ]]; then
-            ssg_enable="true"
-          else
-            ssg_enable="false"
-          fi
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "true" ]]; then
-            rekernel_enable="true"
-          else
-            rekernel_enable="false"
-          fi
-          echo "ssg_enable=$ssg_enable" >> $GITHUB_ENV
-          echo "rekernel_enable=$rekernel_enable" >> $GITHUB_ENV
+          echo "ssg_enable=${{ github.event.inputs.ssg_rekernel_enable }}" >> $GITHUB_ENV
+          echo "rekernel_enable=${{ github.event.inputs.ssg_rekernel_enable }}" >> $GITHUB_ENV
           echo "zram_enable=${{ github.event.inputs.ZRAM }}" >> $GITHUB_ENV
 
       - name: 创建发布
-        id: create_release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "${{ env.TAG_HEAD }}-${{ env.TIME }}"
@@ -762,7 +621,8 @@ jobs:
             - Re-Kernel 支持：${{ env.rekernel_enable }}
             - 网络优化：${{ github.event.inputs.better_net }}
             - BBR 算法：${{ github.event.inputs.bbr_enable }}
-            - **ZRAM 功能**：${{ env.zram_enable }}（集成lz4kd/lz4k_oplus算法，独立模块）
+            - **ZRAM 功能**：${{ env.zram_enable }}（集成lz4kd/lz4k_oplus算法）
+            - **内核后缀**：${{ github.event.inputs.kernel_suffix || '伪官方随机后缀（如X-o-gXXXXXXX）' }}
           draft: false
           prerelease: false
           files: |
