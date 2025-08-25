@@ -9,8 +9,9 @@ env:
   KERNEL_NAME: 'android14-11-o-g31602dff16cb'
   KERNELSU_VARIANT: 'SukiSU-Ultra'
   KERNELSU_BRANCH: 'susfs-main'
+  # ZRAM基础配置（修复：改用GitHub API地址）
   ZRAM_PATCH_REPO: https://github.com/SukiSU-Ultra/SukiSU_patch.git
-  ZRAM_MODULE_REPO: https://github.com/FurLC/ZRAM-Module/releases/latest
+  ZRAM_MODULE_API: https://api.github.com/repos/FurLC/ZRAM-Module/releases/latest  # 修复：用API而非HTML页面
   ZRAM_ALGORITHM_PATHS: |
     ./kernel_workspace/common/include/linux/
     ./kernel_workspace/common/lib/
@@ -81,6 +82,7 @@ on:
         required: true
         type: string
         default: 'android14-11-o-g31602dff16cb'
+      # ZRAM开关参数（与参考脚本一致）
       ZRAM:
         type: boolean
         description: "是否添加更多ZRAM算法(lz4kd/lz4k_oplus,适配6.1内核)"
@@ -104,7 +106,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             curl bison flex make binutils git perl gcc python3 \
             python-is-python3 bc libssl-dev libelf-dev \
-            bc aria2 zip unzip ccache jq  # 参考脚本：新增jq（用于解析ZRAM模块下载链接）
+            bc aria2 zip unzip ccache jq  # 修复：确保安装jq（解析JSON用）
           echo "检查当前 Git 版本："
           git --version
           echo "升级 Git 到最新版本..."
@@ -229,7 +231,7 @@ jobs:
       - name: 应用 KernelSU & SUSFS 补丁
         run: |
           cd kernel_workspace
-          # 参考脚本：克隆SukiSU_patch（ZRAM补丁来源）
+          # 克隆SukiSU_patch（ZRAM补丁来源）
           if [[ ${{ github.event.inputs.ZRAM }} == "true" ]]; then
             echo "克隆 SukiSU_patch 仓库（用于ZRAM补丁）..."
             git clone --depth=1 ${{ env.ZRAM_PATCH_REPO }} || git clone ${{ env.ZRAM_PATCH_REPO }}
@@ -273,7 +275,7 @@ jobs:
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           fi      
 
-      # 参考脚本：ZRAM步骤1：复制算法头文件/源码（与参考脚本"Apply Patches SukiSU Ultra"中ZRAM逻辑对齐）
+      # ZRAM步骤1：复制算法头文件/源码（与参考脚本对齐）
       - name: Copy ZRAM Algorithm Files (if enabled)
         if: ${{ github.event.inputs.ZRAM == 'true' }}
         run: |
@@ -281,22 +283,19 @@ jobs:
           [ -d ./SukiSU_patch ] || git clone --depth=1 ${{ env.ZRAM_PATCH_REPO }}
           
           echo "正在复制 ZRAM 算法头文件与源码（lz4k/lz4k_oplus）..."
-          # 复制lz4k算法文件（参考脚本路径）
           cp -r ./SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux/
           cp -r ./SukiSU_patch/other/zram/lz4k/lib/* ./common/lib/
           cp -r ./SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto/
-          # 复制lz4k_oplus算法文件（参考脚本路径）
           cp -r ./SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
           echo "✅ ZRAM 算法文件复制完成"
 
-      # 参考脚本：ZRAM步骤2：应用ZRAM补丁（与参考脚本"Apply ZRAM"步骤逻辑对齐）
+      # ZRAM步骤2：应用ZRAM补丁（与参考脚本对齐）
       - name: Apply ZRAM Patches (if enabled)
         if: ${{ github.event.inputs.ZRAM == 'true' }}
         run: |
           cd kernel_workspace/common
           ZRAM_PATCH_DIR="../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}"
           
-          # 应用lz4kd补丁（参考脚本逻辑）
           if [ -f "$ZRAM_PATCH_DIR/lz4kd.patch" ]; then
             cp "$ZRAM_PATCH_DIR/lz4kd.patch" ./
             echo "正在打 lz4kd 补丁..."
@@ -307,7 +306,6 @@ jobs:
             exit 1
           fi
           
-          # 应用lz4k_oplus补丁（参考脚本逻辑）
           if [ -f "$ZRAM_PATCH_DIR/lz4k_oplus.patch" ]; then
             cp "$ZRAM_PATCH_DIR/lz4k_oplus.patch" ./
             echo "正在打 lz4k_oplus 补丁..."
@@ -406,9 +404,9 @@ jobs:
           echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> ./arch/arm64/configs/gki_defconfig
           sed -i 's/check_defconfig//' ./build.config.gki          
           
-          
+          # ZRAM配置项（与参考脚本一致）
           if [[ ${{ github.event.inputs.ZRAM }} == "true" ]]; then
-            echo "正在添加 ZRAM 配置项..."
+            echo "正在添加 ZRAM 配置项（参考SukiSU Ultra逻辑）..."
             echo "CONFIG_CRYPTO_LZ4HC=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_CRYPTO_LZ4K=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_CRYPTO_LZ4KD=y" >> ./arch/arm64/configs/gki_defconfig
@@ -588,48 +586,67 @@ jobs:
             KSU_TYPENAME="KSUNext"
           fi
           echo "KSU_TYPENAME=$KSU_TYPENAME" >> $GITHUB_ENV
-          # 使用 env.FEIL 替换 kernel_suffix 作为机型标识
           if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
             zip -r ../AnyKernel3_${{ env.KSU_TYPENAME }}_${{ env.KSUVER }}_${{ env.FEIL }}_${{ github.event.inputs.kernel_suffix }}.zip ./*
           else
             zip -r ../AnyKernel3_${{ env.KSU_TYPENAME }}_${{ env.KSUVER }}_${{ env.FEIL }}_${{ env.KERNEL_NAME }}.zip ./*
           fi
-      
+
+      # 修复核心：ZRAM步骤3：用GitHub API下载模块模板并打包
       - name: Download and Package ZRAM Module (if enabled)
         if: ${{ github.event.inputs.ZRAM == 'true' }}
         id: zram_find
         run: |
           set -e
           cd ${{ github.workspace }}
-          sudo apt install -y unzip
-          echo "获取 ZRAM 模块模板..."
-
+          sudo apt install -y unzip jq
+          
+          # 修复1：调用GitHub API获取最新Release资产（JSON格式）
+          ZRAM_API_URL="${{ env.ZRAM_MODULE_API }}"
+          echo "通过GitHub API获取 ZRAM 模块模板：$ZRAM_API_URL"
+          
+          # 修复2：3次重试+API认证（避免限流）
           retries=3
           success=0
+          download_url=""
           for i in $(seq 1 $retries); do
-            echo "第 $i 次尝试获取 ZRAM 模块下载链接..."
-            download_url=$(curl -s ${{ env.ZRAM_MODULE_REPO }} | \
-              grep "browser_download_url" | grep "ZRAM-Module-.*\.zip" | cut -d '"' -f 4 | head -n 1)
+            echo "第 $i 次尝试获取链接..."
+            # 加Authorization头提升API速率限制，仅读取公开仓库无需额外权限
+            download_url=$(curl -s \
+              -H "Accept: application/vnd.github.v3+json" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "$ZRAM_API_URL" | \
+              # 精准过滤：只取含"ZRAM-Module-"且以.zip结尾的文件
+              jq -r '.assets[] | select(.name | contains("ZRAM-Module-") and endswith(".zip")) | .browser_download_url' | head -n 1)
             
-            if [ -n "$download_url" ]; then
-              echo "✅ 成功获取 ZRAM 模块链接: $download_url"
-              wget -N "$download_url" && success=1 && break
+            if [ -n "$download_url" ] && [ "$download_url" != "null" ]; then
+              echo "✅ 成功获取链接: $download_url"
+              success=1
+              break
             else
-              echo "⚠️ 获取链接失败，3秒后重试..."
+              echo "⚠️ 获取失败，3秒后重试（API响应如下）："
+              curl -s -H "Accept: application/vnd.github.v3+json" "$ZRAM_API_URL" | jq '.assets[].name'  # 打印所有资产名便于调试
               sleep 3
             fi
           done
           
           if [ "$success" -ne 1 ]; then
-            echo "❌ 3次尝试均失败，跳过 ZRAM 模块上传"
+            echo "❌ 3次尝试失败，可能原因："
+            echo "1. GitHub API 限流（稍后重试）"
+            echo "2. FurLC/ZRAM-Module 无最新Release"
+            echo "3. 模块文件名格式变更（需检查仓库）"
             echo "upload=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-
+          
+          # 下载并解压模板
+          echo "下载 ZRAM 模块模板..."
+          wget -N "$download_url" || { echo "❌ 下载失败"; echo "upload=false" >> $GITHUB_OUTPUT; exit 0; }
           ZRAM_ZIP=$(ls -t ZRAM-Module-*.zip | head -n 1)
           unzip -q "$ZRAM_ZIP" -d ZRAM-Module
-
-          echo "查找编译生成的 zram.ko..."
+          
+          # 查找编译生成的zram.ko
+          echo "查找内核编译的 zram.ko..."
           search_paths=(
             "./kernel_workspace/common/out"
             "./kernel_workspace/device/qcom"
@@ -642,17 +659,19 @@ jobs:
           done
           
           if [ -z "$zram_path" ]; then
-            echo "❌ 未找到 zram.ko，跳过上传"
+            echo "❌ 未找到 zram.ko（内核未编译ZRAM模块）"
             echo "upload=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           
+          # 替换模板中的zram.ko
           TARGET_KO="./ZRAM-Module/zram/zram.ko"
           mkdir -p "$(dirname "$TARGET_KO")"
           cp "$zram_path" "$TARGET_KO"
-          echo "✅ 已替换 ZRAM 模块中的 zram.ko（来源：$zram_path）"
+          echo "✅ 已替换 ZRAM 模块（来源：$zram_path）"
           echo "upload=true" >> $GITHUB_OUTPUT
 
+      # ZRAM步骤4：上传ZRAM模块（修复后）
       - name: Upload ZRAM Module (if enabled)
         if: ${{ github.event.inputs.ZRAM == 'true' && steps.zram_find.outputs.upload == 'true' }}
         uses: actions/upload-artifact@v4
@@ -681,6 +700,7 @@ jobs:
           name: Kernel_ZIP_Artifacts
           path: ./release_zips
 
+      # 下载ZRAM模块（若启用）
       - name: Download ZRAM Module Artifact (if enabled)
         if: ${{ github.event.inputs.ZRAM == 'true' && needs.build.outputs.zram_upload == 'true' }}
         uses: actions/download-artifact@v4
