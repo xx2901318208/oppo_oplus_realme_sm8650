@@ -6,7 +6,7 @@ env:
   FEIL: 'gt5pro'
   ANDROID_VERSION: 'android14'
   KERNEL_VERSION: '6.1'
-  KERNEL_NAME: 'android14-11-o-g31602dff16cb'
+  KERNEL_NAME: '11-o-g31602dff16cb'
   KERNELSU_VARIANT: 'SukiSU-Ultra'
   KERNELSU_BRANCH: 'susfs-main'
   ZRAM_PATCH_REPO: https://github.com/SukiSU-Ultra/SukiSU_patch.git
@@ -77,7 +77,7 @@ on:
         description: '内核后缀(留空时触发随机后缀默认)'
         required: true
         type: string
-        default: 'android14-11-o-g31602dff16cb'
+        default: '11-o-g31602dff16cb'
       ZRAM:
         type: boolean
         description: "是否添加更多ZRAM算法(lz4kd/lz4k_oplus,适配6.1内核)"
