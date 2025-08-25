@@ -455,7 +455,7 @@ jobs:
 
           if [[ ${{ github.event.inputs.ZRAM }} == "true" ]]; then
             find out/ -name "zram.ko" || echo "⚠️ ZRAM启用但未找到zram.ko"
-
+          fi
           ccache -s
           df -h
 
