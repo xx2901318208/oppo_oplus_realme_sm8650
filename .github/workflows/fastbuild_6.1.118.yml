@@ -468,33 +468,20 @@ jobs:
           fi
 
           if [[ "${{ github.event.inputs.lz4_enable }}" == "2" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
-            git clone --depth=1 https://github.com/FurLC/ZRAM-Module.git ../ZRAM-Module
-            mkdir -p ./system/etc/init ./system/bin ./system/etc
-            cp ../ZRAM-Module/system/etc/init/zram-init.rc ./system/etc/init/
-            cp ../ZRAM-Module/system/bin/zram-control.sh ./system/bin/
-            cp ../ZRAM-Module/system/etc/zram.conf ./system/etc/
-            cp ../ZRAM-Module/README.md ./ZRAM-Module-README.md
-            
-            chmod 755 ./system/bin/zram-control.sh
-            chmod 644 ./system/etc/init/zram-init.rc
-            chmod 644 ./system/etc/zram.conf
-
-            sed -i 's/^COMP_ALG=.*/COMP_ALG=lz4kd/' ./system/etc/zram.conf
-            sed -i 's/^ZRAM_SIZE=.*/ZRAM_SIZE=8G/' ./system/etc/zram.conf
-            
-            rm -rf ../ZRAM-Module
+          if [[ "${{ github.event.inputs.lz4_enable }}" == "2" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
+            wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/refs/heads/main/ZRAM.zip
+          fi
+          if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
+            zip -r ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSUVER }}_${{ env.KERNEL_VERSION }}_A15_${{ github.event.inputs.kernel_suffix }}.zip ./*
+          else
+            zip -r ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSUVER }}_${{ env.KERNEL_VERSION }}_A15_${{ env.KERNEL_NAME }}.zip ./*
           fi
 
-          KSU_TYPENAME=$([[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]] && echo "SukiSU" || echo "KSUNext")
-          echo "KSU_TYPENAME=$KSU_TYPENAME" >> $GITHUB_ENV
-          FINAL_SUFFIX=$([[ -n "${{ github.event.inputs.kernel_suffix }}" ]] && echo "${{ github.event.inputs.kernel_suffix }}" || echo "${{ env.KERNEL_NAME }}")
-          zip -r ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSUVER }}_${{ env.FEIL }}_${FINAL_SUFFIX}.zip ./*
-          
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
         with:
           name: Kernel_ZIP_Artifacts
-          path: ${{ github.workspace }}/kernel_workspace/AnyKernel3_*.zip            
+          path: ${{ github.workspace }}/kernel_workspace/AnyKernel*.zip
 
   release:
     needs: build
@@ -503,6 +490,7 @@ jobs:
       contents: write
       packages: write
       actions: read
+      
     steps:
       - name: 下载 ZIP 工件
         uses: actions/download-artifact@v4
