@@ -363,10 +363,10 @@ jobs:
             echo "CONFIG_CRYPTO_LZ4K=y" >> "$CONFIG_FILE"
             echo "CONFIG_CRYPTO_LZ4KD=y" >> "$CONFIG_FILE"
             echo "CONFIG_CRYPTO_842=y" >> "$CONFIG_FILE"           
-            #echo "CONFIG_F2FS_FS_LZ4=y" >> "$CONFIG_FILE"
-            #echo "CONFIG_F2FS_FS_LZ4HC=y" >> "$CONFIG_FILE"
-            #echo "CONFIG_F2FS_FS_LZ4KD=y" >> "$CONFIG_FILE"
-            #echo "CONFIG_F2FS_FS_ZSTD=y" >> "$CONFIG_FILE"
+            echo "CONFIG_F2FS_FS_LZ4=y" >> "$CONFIG_FILE"
+            echo "CONFIG_F2FS_FS_LZ4HC=y" >> "$CONFIG_FILE"
+            echo "CONFIG_F2FS_FS_LZ4KD=y" >> "$CONFIG_FILE"
+            echo "CONFIG_F2FS_FS_ZSTD=y" >> "$CONFIG_FILE"
           fi
           echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> "$CONFIG_FILE"
           sed -i 's/check_defconfig//' ./build.config.gki
