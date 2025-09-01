@@ -59,6 +59,15 @@ on:
           - 'false'
           - 'true'
           - 'default'
+      SCHED_EEVDF:
+        description: "是否启用SCHED_EEVDF算法(false关闭,true仅加入算法,default设为默认6.6内核可用)"
+        required: true
+        type: choice
+        default: 'false'
+        options:
+          - 'false'
+          - 'true'
+          - 'default'
       better_net:
         description: '是否开启网络功能增强优化配置(优化代理连接,IPV6等功能)'
         required: true
@@ -514,6 +523,13 @@ jobs:
             echo "正在启用Re-Kernel支持(用于与Freezer,NoActive等软件配合使用,提升冻结后台能力)…"
             cd kernel_workspace
             echo "CONFIG_REKERNEL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          fi
+      - name: 启用 EEVDF 调度器
+        run: |
+          if [[ "${{ github.event.inputs.SCHED_EEVDF_enable }}" == "true" ]]; then
+            echo "正在启用EEVDF支持"
+            cd kernel_workspace
+            echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
 
       - name: 添加制作名称
