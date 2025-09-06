@@ -422,6 +422,13 @@ jobs:
            echo "CONFIG_DRM_MSM_DSI_120HZ=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_QCOM_KGSL_120HZ_GPU_FREQ=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_QCOM_KGSL_DYNAMIC_FPS=y" >> ./common/arch/arm64/configs/gki_defconfig
+           # 添加基带保护相关配置项
+           echo "CONFIG_BASEBAND_GUARD=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./common/arch/arm64/configs/gki_defconfig
+           # 添加 FQ_CODEL 相关配置项
+           echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_DEFAULT_NET_SCH="fq_codel"" >> ./common/arch/arm64/configs/gki_defconfig
            # SELinux 安全增强 设备能耗管理                
            echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
