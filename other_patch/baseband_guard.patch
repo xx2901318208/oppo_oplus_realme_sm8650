@@ -1,0 +1,83 @@
+diff --git a/drivers/baseband_guard/Makefile b/drivers/baseband_guard/Makefile
+new file mode 100644
+index 0000000..ee55843
+--- /dev/null
++++ b/drivers/baseband_guard/Makefile
+@@ -0,0 +1 @@
++obj-y += baseband_guard.o
+diff --git a/drivers/baseband_guard/baseband_guard.c b/drivers/baseband_guard/baseband_guard.c
+new file mode 100644
+index 0000000..17e45c7
+--- /dev/null
++++ b/drivers/baseband_guard/baseband_guard.c
+@@ -0,0 +1,70 @@
++// SPDX-License-Identifier: GPL-2.0
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/kobject.h>
++#include <linux/sysfs.h>
++#include <linux/genhd.h>
++#include <linux/blkdev.h>
++#include <linux/bio.h>
++
++static bool guard_enabled = true;
++core_param(guard_enabled, guard_enabled, bool, 0644);
++
++static const char *const blklist[] = {
++        "modem", "modem_a", "modem_b",
++        "boot", "boot_a", "boot_b",
++        "vendor_boot", "vendor_boot_a", "vendor_boot_b",
++        "dtbo", "dtbo_a", "dtbo_b",
++        "abl", "abl_a", "abl_b",
++        "xbl", "xbl_a", "xbl_b",
++        NULL
++};
++
++static bool in_recovery(void)
++{
++        return strstr(saved_command_line, "androidboot.mode=recovery") != NULL;
++}
++
++static bool protected(const char *name)
++{
++        const char *const *p;
++        for (p = blklist; *p; p++)
++                if (!strcmp(name, *p))
++                        return true;
++        return false;
++}
++
++static blk_qc_t (*real_submit_bio)(struct bio *bio);
++
++static blk_qc_t bg_submit_bio(struct bio *bio)
++{
++        if (bio_op(bio) != REQ_OP_WRITE)
++                goto out;
++        if (guard_enabled && !in_recovery() &&
++            protected(bio->bi_bdev->bd_disk->disk_name)) {
++                pr_info("baseband_guard: blocked write to %s\n",
++                        bio->bi_bdev->bd_disk->disk_name);
++                bio_io_error(bio);
++                return BLK_QC_T_NONE;
++        }
++out:
++        return real_submit_bio(bio);
++}
++
++static int __init baseband_guard_init(void)
++{
++        real_submit_bio = submit_bio;
++        return register_trace_android_vh_blk_mq_submit_bio(bg_submit_bio, NULL);
++}
++
++static void __exit baseband_guard_exit(void)
++{
++        unregister_trace_android_vh_blk_mq_submit_bio(bg_submit_bio, NULL);
++}
++
++module_init(baseband_guard_init);
++module_exit(baseband_guard_exit);
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("SM8650 baseband/boot write guard");
++
++
