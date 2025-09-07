@@ -427,8 +427,8 @@ jobs:
               echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./arch/arm64/configs/gki_defconfig
               
               # 下载并应用config.patch
-              echo "正在下载 config.patch..."
-              wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch -O config.patch
+              BASEBAND_PATCH_URL="https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/config.patch"
+              wget "$BASEBAND_PATCH_URL" -O config.patch
               
               echo "验证config.patch文件类型..."
               if file --mime-type -b config.patch | grep -q "text/plain"; then
