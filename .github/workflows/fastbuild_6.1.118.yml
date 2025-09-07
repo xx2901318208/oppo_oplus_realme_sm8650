@@ -430,9 +430,17 @@ jobs:
               echo "正在下载 config.patch..."
               wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch -O config.patch
               
+              echo "验证config.patch文件类型..."
+              if file --mime-type -b config.patch | grep -q "text/plain"; then
+                echo "config.patch是纯文本文件，继续处理"
+              else
+                echo "错误：下载的config.patch不是纯文本文件"
+                exit 1
+              fi
+              
               echo "正在应用 config.patch..."
-              # 关键修复：使用绝对路径指定目标文件
-              if patch -p0 --verbose < config.patch; then
+              # 修复：使用-p1参数应用补丁
+              if patch -p1 --verbose < config.patch; then
                 echo "config.patch 应用成功"
               else
                 echo "config.patch 应用失败，尝试手动修改..."
@@ -446,6 +454,7 @@ jobs:
                 else
                   echo "错误：kernel/Makefile 不存在"
                   ls -la ./kernel || echo "kernel目录不存在"
+                  exit 1
                 fi
               fi
               
@@ -458,13 +467,25 @@ jobs:
               echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./arch/arm64/configs/gki_defconfig
               
-              # 应用用户提供的GitHub补丁
+              # 应用用户提供的GitHub补丁（修复URL）
               echo "正在应用用户提供的基带防护补丁..."
-              wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/blob/main/other_patch/baseband_guard.patch -O baseband_guard.patch
+              # 使用原始文件URL而非网页URL
+              BASEBAND_PATCH_URL="https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband_guard.patch"
+              wget "$BASEBAND_PATCH_URL" -O baseband_guard.patch
               
-              echo "验证补丁文件是否下载成功..."
-              if [ ! -f "baseband_guard.patch" ]; then
-                echo "错误：补丁文件下载失败"
+              echo "验证补丁文件大小和类型..."
+              # 检查文件大小是否合理（正常补丁通常小于50KB）
+              if [ $(stat -c%s "baseband_guard.patch") -gt 50000 ]; then
+                echo "警告：基带防护补丁文件过大，可能不是有效补丁"
+                # 显示文件前100字节内容用于调试
+                echo "文件前100字节内容："
+                head -c 100 baseband_guard.patch | cat -v
+                exit 1
+              fi
+              
+              # 检查是否为纯文本文件
+              if ! file --mime-type -b baseband_guard.patch | grep -q "text/plain"; then
+                echo "错误：下载的基带防护补丁不是纯文本文件"
                 exit 1
               fi
               
@@ -472,6 +493,11 @@ jobs:
               patch -p1 < baseband_guard.patch
               if [ $? -ne 0 ]; then
                 echo "错误：基带防护补丁应用失败"
+                # 显示补丁内容前5行和后5行用于调试
+                echo "补丁内容预览："
+                head -n 5 baseband_guard.patch
+                echo "..."
+                tail -n 5 baseband_guard.patch
                 exit 1
               fi
               
@@ -495,6 +521,7 @@ jobs:
               echo "当前目录结构:"
               ls -la ./arch/arm64/configs/ || echo "configs目录不存在"
               find . -name "gki_defconfig" -type f
+              exit 1
             fi
           fi
 
@@ -763,7 +790,7 @@ jobs:
             - BBR/Brutal 等拥塞控制算法支持：${{ github.event.inputs.bbr_enable }}
             - 三星SSG IO调度器支持：${{ env.ssg_enable }}
             - Re-Kernel支持：${{ env.rekernel_enable }}
-            - **基带防护**：已集成GitHub远程补丁(https://github.com/xx2901318208/oppo_oplus_realme_sm8650/blob/main/other_patch/baseband_guard.patch)，保护modem/boot/vendor_boot/dtbo/abl/xbl等A/B分区
+            - **基带防护**：已集成GitHub远程补丁(https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband_guard.patch)，保护modem/boot/vendor_boot/dtbo/abl/xbl等A/B分区
           draft: false
           prerelease: false
           files: |
