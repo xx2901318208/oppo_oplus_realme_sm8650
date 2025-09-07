@@ -375,9 +375,10 @@ jobs:
             wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch          
             patch -p1 -F 3 < config.patch || true
             # 创建基带保护目录并应用补丁
+            mkdir -p drivers/baseband_guard
             wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch
             patch -p1 -F 3 < baseband_guard.patch || true
-            cd .
+            cd ..
             #启用  BPF 流解析器,实现高性能网络流量处理,增强网络监控和分析能力
             echo "CONFIG_BPF_STREAM_PARSER=y" >> ./common/arch/arm64/configs/gki_defconfig
             #开启增强 Netfilter 防火墙扩展模块,支持基于地址类型的匹配规则,启用 IP 集合支持,提高防火墙规则灵活性,支持更复杂的流量过滤策略
@@ -407,9 +408,11 @@ jobs:
             echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./common/arch/arm64/configs/gki_defconfig                  
           fi
            # 添加基带保护相关配置项
-           echo "CONFIG_BASEBAND_GUARD=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./common/arch/arm64/configs/gki_defconfig
+           cd ./common
+           ./scripts/config --file ./arch/arm64/configs/gki_defconfig \
+           --set-val CONFIG_BASEBAND_GUARD y \
+           --set-val CONFIG_BASEBAND_GUARD_RECOVERY_WRITE y \
+           --set-val CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG y
            # 添加 FQ_CODEL 相关配置项
            echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_DEFAULT_NET_SCH="fq_codel"" >> ./common/arch/arm64/configs/gki_defconfig          
