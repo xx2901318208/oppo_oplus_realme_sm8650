@@ -455,8 +455,8 @@ jobs:
                 # 手动创建补丁内容
                 mkdir -p drivers/baseband_guard
                 cat > drivers/baseband_guard/Makefile << 'EOF'
-obj-y += baseband_guard.o
-EOF
+                obj-y += baseband_guard.o
+                EOF
                 
                 # 下载baseband_guard.c文件
                 wget -O drivers/baseband_guard/baseband_guard.c https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/refs/heads/main/other_patch/baseband_guard.c
