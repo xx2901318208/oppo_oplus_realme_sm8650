@@ -453,23 +453,31 @@ jobs:
               echo "CONFIG_BASEBAND_GUARD=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./arch/arm64/configs/gki_defconfig
-              # 应用修改后的基带保护补丁
-              echo "正在应用 modified_baseband_guard.patch..."
-              # 使用本地补丁文件，假设补丁已上传到仓库的patches目录
-              if [ -f "../patches/modified_baseband_guard.patch" ]; then
-                patch -p1 < ../patches/modified_baseband_guard.patch
-                if [ $? -ne 0 ]; then
-                  echo "modified_baseband_guard.patch 应用失败"
-                  exit 1
-                fi
-              else
-                echo "错误：modified_baseband_guard.patch 不存在"
+              
+              # 添加 FQ_CODEL 相关配置项
+              echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./arch/arm64/configs/gki_defconfig
+              echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./arch/arm64/configs/gki_defconfig
+              
+              # 应用用户提供的GitHub补丁
+              echo "正在应用用户提供的基带防护补丁..."
+              wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/blob/main/other_patch/baseband_guard.patch -O baseband_guard.patch
+              
+              echo "验证补丁文件是否下载成功..."
+              if [ ! -f "baseband_guard.patch" ]; then
+                echo "错误：补丁文件下载失败"
                 exit 1
               fi
               
-              # 验证补丁应用
+              echo "应用基带防护补丁..."
+              patch -p1 < baseband_guard.patch
+              if [ $? -ne 0 ]; then
+                echo "错误：基带防护补丁应用失败"
+                exit 1
+              fi
+              
+              # 验证补丁应用结果
               if ! grep -q "baseband_guard" drivers/Makefile; then
-                echo "基带保护补丁未正确应用"
+                echo "错误：基带防护补丁未正确应用"
                 exit 1
               fi
               
@@ -505,9 +513,6 @@ jobs:
             echo "CONFIG_TCP_CONG_WESTWOOD=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_TCP_CONG_HTCP=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_TCP_CONG_BRUTAL=y" >> ./arch/arm64/configs/gki_defconfig
-            # 添加 FQ_CODEL 相关配置项
-            echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./arch/arm64/configs/gki_defconfig
             
             if [[ "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
               echo "正在将BBR设为默认拥塞控制算法..."
@@ -758,7 +763,7 @@ jobs:
             - BBR/Brutal 等拥塞控制算法支持：${{ github.event.inputs.bbr_enable }}
             - 三星SSG IO调度器支持：${{ env.ssg_enable }}
             - Re-Kernel支持：${{ env.rekernel_enable }}
-            - **基带防护**：已集成modified_baseband_guard_v2.patch，保护modem/boot/vendor_boot/dtbo/abl/xbl等A/B分区
+            - **基带防护**：已集成GitHub远程补丁(https://github.com/xx2901318208/oppo_oplus_realme_sm8650/blob/main/other_patch/baseband_guard.patch)，保护modem/boot/vendor_boot/dtbo/abl/xbl等A/B分区
           draft: false
           prerelease: false
           files: |
