@@ -19,10 +19,10 @@ index 0000000..0853535
 +obj-$(CONFIG_BASEBAND_GUARD) := baseband_guard.o
 diff --git a/drivers/baseband_guard/baseband_guard.c b/drivers/baseband_guard/baseband_guard.c
 new file mode 100644
-index 0000000..1234567
+index 0000000..9e9a3c1
 --- /dev/null
 +++ b/drivers/baseband_guard/baseband_guard.c
-@@ -0,0 +1,150 @@
+@@ -0,0 +1,152 @@
 +#include <linux/module.h>
 +#include <linux/kernel.h>
 +#include <linux/init.h>
@@ -30,6 +30,8 @@ index 0000000..1234567
 +#include <linux/kdev_t.h>
 +#include <linux/string.h>
 +#include <linux/reboot.h>
++#include <linux/device.h>
++#include <linux/blkdev.h>
 +
 +static bool guard_enabled = true;
 +module_param(guard_enabled, bool, 0644);
@@ -67,14 +69,13 @@ index 0000000..1234567
 +    return false;
 +}
 +
-+static int baseband_guard_bdev_check(struct block_device *bdev)
++static int check_partition_write(struct block_device *bdev)
 +{
 +    const char **p;
 +    char bdev_name[BDEVNAME_SIZE];
 +
-+    if (!guard_enabled) {
++    if (!guard_enabled)
 +        return 0;
-+    }
 +
 +    if (allow_in_recovery && is_recovery_mode()) {
 +        pr_info("baseband_guard: Write allowed in recovery mode\n");
@@ -102,44 +103,24 @@ index 0000000..1234567
 +    return 0;
 +}
 +
-+static int blkdev_open(struct block_device *bdev, fmode_t mode)
++static int guard_blkdev_open(struct block_device *bdev, fmode_t mode)
 +{
 +    if (mode & FMODE_WRITE) {
-+        return baseband_guard_bdev_check(bdev);
++        return check_partition_write(bdev);
 +    }
 +    return 0;
 +}
 +
-+static int __init baseband_guard_init(void)
-+{
-+    pr_info("baseband_guard: Initializing module\n");
-+    return 0;
-+}
-+
-+static void __exit baseband_guard_exit(void)
-+{
-+    pr_info("baseband_guard: Exiting module\n");
-+}
-+
-+static int blkdev_get(struct block_device *bdev, fmode_t mode, void *holder)
-+{
-+    if (mode & FMODE_WRITE) {
-+        return baseband_guard_bdev_check(bdev);
-+    }
-+    return 0;
-+}
-+
-+static const struct block_device_operations bd_guard_ops = {
-+    .open = blkdev_open,
-+    .get_block_device = blkdev_get,
-+    .owner = THIS_MODULE
++static const struct block_device_operations guard_bdev_ops = {
++    .open = guard_blkdev_open,
++    .owner = THIS_MODULE,
 +};
 +
 +static int baseband_guard_probe(struct device *dev)
 +{
 +    struct block_device *bdev = dev_to_bdev(dev);
 +    if (bdev) {
-+        bdev->bd_ops = &bd_guard_ops;
++        bdev->bd_ops = &guard_bdev_ops;
 +    }
 +    return 0;
 +}
@@ -149,10 +130,22 @@ index 0000000..1234567
 +    .probe = baseband_guard_probe,
 +};
 +
++static int __init baseband_guard_init(void)
++{
++    pr_info("baseband_guard: Initializing\n");
++    return bus_register(&block_bus_type);
++}
++
++static void __exit baseband_guard_exit(void)
++{
++    pr_info("baseband_guard: Exiting\n");
++    bus_unregister(&block_bus_type);
++}
++
 +module_init(baseband_guard_init);
 +module_exit(baseband_guard_exit);
 +
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Your Name");
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("cctv18");
 +MODULE_DESCRIPTION("Protect critical partitions from being written to.");
 +
