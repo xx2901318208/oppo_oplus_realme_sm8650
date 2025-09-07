@@ -453,22 +453,17 @@ jobs:
               echo "CONFIG_BASEBAND_GUARD=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 添加 FQ_CODEL 相关配置项
-              echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./arch/arm64/configs/gki_defconfig
-              
               # 应用修改后的基带保护补丁
-              echo "正在应用 modified_baseband_guard_v2.patch..."
+              echo "正在应用 modified_baseband_guard.patch..."
               # 使用本地补丁文件，假设补丁已上传到仓库的patches目录
-              if [ -f "../patches/modified_baseband_guard_v2.patch" ]; then
-                patch -p1 < ../patches/modified_baseband_guard_v2.patch
+              if [ -f "../patches/modified_baseband_guard.patch" ]; then
+                patch -p1 < ../patches/modified_baseband_guard.patch
                 if [ $? -ne 0 ]; then
-                  echo "modified_baseband_guard_v2.patch 应用失败"
+                  echo "modified_baseband_guard.patch 应用失败"
                   exit 1
                 fi
               else
-                echo "错误：modified_baseband_guard_v2.patch 不存在"
+                echo "错误：modified_baseband_guard.patch 不存在"
                 exit 1
               fi
               
@@ -510,6 +505,9 @@ jobs:
             echo "CONFIG_TCP_CONG_WESTWOOD=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_TCP_CONG_HTCP=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_TCP_CONG_BRUTAL=y" >> ./arch/arm64/configs/gki_defconfig
+            # 添加 FQ_CODEL 相关配置项
+            echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./arch/arm64/configs/gki_defconfig
             
             if [[ "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
               echo "正在将BBR设为默认拥塞控制算法..."
