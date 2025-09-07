@@ -364,6 +364,13 @@ jobs:
           fi
           # 开启O2编译优化配置
           echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 添加基带保护相关配置项
+          echo "CONFIG_BASEBAND_GUARD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./common/arch/arm64/configs/gki_defconfig
+          # 添加 FQ_CODEL 相关配置项
+          echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_DEFAULT_NET_SCH="fq_codel"" >> ./common/arch/arm64/configs/gki_defconfig
           #禁用 defconfig 检查
           sed -i 's/check_defconfig//' ./common/build.config.gki
           
@@ -398,13 +405,6 @@ jobs:
             #启用 IPv6 网络地址转换
             echo "CONFIG_IP6_NF_NAT=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./common/arch/arm64/configs/gki_defconfig
-            # 添加基带保护相关配置项
-            echo "CONFIG_BASEBAND_GUARD=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./common/arch/arm64/configs/gki_defconfig
-            # 添加 FQ_CODEL 相关配置项
-            echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_DEFAULT_NET_SCH="fq_codel"" >> ./common/arch/arm64/configs/gki_defconfig
             #由于部分机型的vintf兼容性检测规则，在开启CONFIG_IP6_NF_NAT后开机会出现"您的设备内部出现了问题。请联系您的设备制造商了解详情。"的提示，故添加一个配置修复补丁，在编译内核时隐藏CONFIG_IP6_NF_NAT=y但不影响对应功能编译
             cd common
             wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
