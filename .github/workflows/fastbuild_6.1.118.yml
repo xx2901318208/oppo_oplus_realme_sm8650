@@ -428,7 +428,7 @@ jobs:
               echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./arch/arm64/configs/gki_defconfig              
               curl -L -o baseband_guard.patch https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/refs/heads/main/other_patch/baseband_guard.patch
-              git apply baseband_guard.patch
+              git apply --verbose baseband_guard.patch
             fi              
               # 验证补丁应用结果
               if ! grep -q "baseband_guard" drivers/Makefile; then
