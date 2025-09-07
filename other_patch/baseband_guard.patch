@@ -1,178 +1,158 @@
 diff --git a/drivers/Makefile b/drivers/Makefile
-index 1234567..abcdefg 100644
+index 6331f1e..b26415a 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
-@@ -123,3 +123,4 @@ obj-$(CONFIG_USB) += usb/
- obj-$(CONFIG_PCI) += pci/
- obj-$(CONFIG_GPIO) += gpio/
+@@ -123,6 +123,7 @@ obj-$(CONFIG_PTP_1588_CLOCK) += ptp/
+ obj-$(CONFIG_PPS)  += pps/
+ obj-$(CONFIG_W1)  += w1/
+ obj-$(CONFIG_POWER_SUPPLY) += power/
 +obj-$(CONFIG_BASEBAND_GUARD) += baseband_guard/
-
+ obj-$(CONFIG_POWER_AVS)  += avs/
+ obj-$(CONFIG_HWMON)  += hwmon/
+ obj-$(CONFIG_THERMAL)  += thermal/
 diff --git a/drivers/baseband_guard/Makefile b/drivers/baseband_guard/Makefile
 new file mode 100644
-index 0000000..1a2b3c4
+index 0000000..0853535
 --- /dev/null
 +++ b/drivers/baseband_guard/Makefile
 @@ -0,0 +1 @@
-+obj-y += baseband_guard.o
-
++obj-$(CONFIG_BASEBAND_GUARD) := baseband_guard.o
 diff --git a/drivers/baseband_guard/baseband_guard.c b/drivers/baseband_guard/baseband_guard.c
 new file mode 100644
-index 0000000..5d6e7f8
+index 0000000..1234567
 --- /dev/null
 +++ b/drivers/baseband_guard/baseband_guard.c
-@@ -0,0 +1,132 @@
-#include <linux/module.h>
-#include <linux/fs.h>
-#include <linux/of.h>
-#include <linux/of_address.h>
-#include <linux/platform_device.h>
-#include <linux/device.h>
-#include <linux/slab.h>
-#include <linux/string.h>
-#include <linux/uaccess.h>
-
-#define BASEBAND_GUARD_VERSION "1.1"
-#define MAX_PROTECTED_PARTITIONS 20  // 增加容量以支持更多分区
-
-static bool guard_enabled = true;
-module_param(guard_enabled, bool, 0644);
-MODULE_PARM_DESC(guard_enabled, "Enable baseband guard protection (default: true)");
-
-struct protected_partition {
-    char name[32];
-    struct device *dev;
-};
-
-static struct protected_partition protected_partitions[MAX_PROTECTED_PARTITIONS];
-static int partition_count = 0;
-
-static int add_protected_partition(const char *name) {
-    if (partition_count >= MAX_PROTECTED_PARTITIONS) {
-        pr_err("baseband_guard: Too many protected partitions\n");
-        return -ENOSPC;
-    }
-    
-    struct device_node *np;
-    np = of_find_node_by_name(NULL, name);
-    if (!np) {
-        pr_warn("baseband_guard: Partition %s not found in device tree\n", name);
-        return -ENODEV;
-    }
-    
-    strncpy(protected_partitions[partition_count].name, name, sizeof(protected_partitions[partition_count].name)-1);
-    protected_partitions[partition_count].dev = of_find_device_by_node(np);
-    of_node_put(np);
-    
-    if (!protected_partitions[partition_count].dev) {
-        pr_warn("baseband_guard: Device for partition %s not found\n", name);
-        return -ENODEV;
-    }
-    
-    pr_info("baseband_guard: Added protection for partition: %s\n", name);
-    partition_count++;
-    return 0;
-}
-
-static int is_partition_protected(const char *name) {
-    int i;
-    for (i = 0; i < partition_count; i++) {
-        if (strcmp(name, protected_partitions[i].name) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-static int baseband_guard_open(struct inode *inode, struct file *filp) {
-    return 0;
-}
-
-static ssize_t baseband_guard_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos) {
-    if (!guard_enabled) {
-        return count;
-    }
-    
-    char *buffer = kmalloc(count + 1, GFP_KERNEL);
-    if (!buffer) {
-        return -ENOMEM;
-    }
-    
-    if (copy_from_user(buffer, buf, count)) {
-        kfree(buffer);
-        return -EFAULT;
-    }
-    buffer[count] = '\0';
-    
-    // Check for partition write commands
-    if (strstr(buffer, "write") || strstr(buffer, "flash") || strstr(buffer, "erase")) {
-        for (int i = 0; i < partition_count; i++) {
-            if (strstr(buffer, protected_partitions[i].name)) {
-                pr_alert("baseband_guard: Blocked write attempt to protected partition: %s\n", 
-                         protected_partitions[i].name);
-                kfree(buffer);
-                return -EPERM;
-            }
-        }
-    }
-    
-    kfree(buffer);
-    return count;
-}
-
-static const struct file_operations baseband_guard_fops = {
-    .owner = THIS_MODULE,
-    .open = baseband_guard_open,
-    .write = baseband_guard_write,
-};
-
-static int baseband_guard_probe(struct platform_device *pdev) {
-    int ret;
-    
-    // 添加用户指定的所有受保护分区
-    const char *partitions[] = {
-        "modem", "modem_a", "modem_b",
-        "boot", "boot_a", "boot_b",
-        "vendor_boot", "vendor_boot_a", "vendor_boot_b",
-        "dtbo", "dtbo_a", "dtbo_b",
-        "abl", "abl_a", "abl_b",
-        "xbl", "xbl_a", "xbl_b"
-    };
-    
-    for (int i = 0; i < ARRAY_SIZE(partitions); i++) {
-        ret = add_protected_partition(partitions[i]);
-        if (ret && ret != -ENODEV) {  // 忽略设备树中不存在的分区
-            dev_err(&pdev->dev, "Failed to add partition %s: %d\n", partitions[i], ret);
-            return ret;
-        }
-    }
-
-    pr_info("baseband_guard: Successfully initialized with %d protected partitions\n", partition_count);
-    return 0;
-}
-
-static int baseband_guard_remove(struct platform_device *pdev) {
-    partition_count = 0;
-    return 0;
-}
-
-static const struct of_device_id baseband_guard_of_match[] = {
-    { .compatible = "android,baseband-guard" },
-    { }
-};
-MODULE_DEVICE_TABLE(of, baseband_guard_of_match);
-
-static struct platform_driver baseband_guard_driver = {
-    .probe = baseband_guard_probe,
-    .remove = baseband_guard_remove,
-    .driver = {
-        .name = "baseband-guard",
-        .of_match_table = baseband_guard_of_match,
-    },
-};
-
-module_platform_driver(baseband_guard_driver);
-
-MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Kernel Security Team");
-MODULE_DESCRIPTION("Baseband and Boot Partition Protection Driver");
-MODULE_VERSION(BASEBAND_GUARD_VERSION);
+@@ -0,0 +1,150 @@
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/fs.h>
++#include <linux/kdev_t.h>
++#include <linux/string.h>
++#include <linux/reboot.h>
++
++static bool guard_enabled = true;
++module_param(guard_enabled, bool, 0644);
++MODULE_PARM_DESC(guard_enabled, "Enable or disable baseband guard");
++
++static bool allow_in_recovery = true;
++module_param(allow_in_recovery, bool, 0644);
++MODULE_PARM_DESC(allow_in_recovery, "Allow writes in recovery mode");
++
++static bool protect_bootimg = true;
++module_param(protect_bootimg, bool, 0644);
++MODULE_PARM_DESC(protect_bootimg, "Protect boot, vendor_boot, and dtbo images");
++
++static const char *protected_partitions[] = {
++    "modem", "modemst1", "modemst2", "fsg", "fsc",
++    "abl", "xbl", "xbl_config", "hyp", "tz",
++    "devinfo", "sec", "persist", "keystore", "frp",
++    "ssd", "uefisecapp", "logfs", "toolsfv",
++    "opporeserve", "oplusreserve", "multiimgoem",
++    "reserve", "cdt", "ddr", "spunvm", "splash",
++    "vbmeta", "vbmeta_system", "vbmeta_vendor",
++    NULL
++};
++
++static const char *boot_partitions[] = {
++    "boot", "vendor_boot", "dtbo", "init_boot",
++    NULL
++};
++
++static bool is_recovery_mode(void)
++{
++    if (reboot_mode == REBOOT_MODE_RECOVERY) {
++        return true;
++    }
++    return false;
++}
++
++static int baseband_guard_bdev_check(struct block_device *bdev)
++{
++    const char **p;
++    char bdev_name[BDEVNAME_SIZE];
++
++    if (!guard_enabled) {
++        return 0;
++    }
++
++    if (allow_in_recovery && is_recovery_mode()) {
++        pr_info("baseband_guard: Write allowed in recovery mode\n");
++        return 0;
++    }
++
++    bdevname(bdev, bdev_name);
++
++    for (p = protected_partitions; *p; ++p) {
++        if (strstr(bdev_name, *p)) {
++            pr_err("baseband_guard: Denying write access to %s\n", bdev_name);
++            return -EPERM;
++        }
++    }
++
++    if (protect_bootimg) {
++        for (p = boot_partitions; *p; ++p) {
++            if (strstr(bdev_name, *p)) {
++                pr_err("baseband_guard: Denying write access to %s\n", bdev_name);
++                return -EPERM;
++            }
++        }
++    }
++
++    return 0;
++}
++
++static int blkdev_open(struct block_device *bdev, fmode_t mode)
++{
++    if (mode & FMODE_WRITE) {
++        return baseband_guard_bdev_check(bdev);
++    }
++    return 0;
++}
++
++static int __init baseband_guard_init(void)
++{
++    pr_info("baseband_guard: Initializing module\n");
++    return 0;
++}
++
++static void __exit baseband_guard_exit(void)
++{
++    pr_info("baseband_guard: Exiting module\n");
++}
++
++static int blkdev_get(struct block_device *bdev, fmode_t mode, void *holder)
++{
++    if (mode & FMODE_WRITE) {
++        return baseband_guard_bdev_check(bdev);
++    }
++    return 0;
++}
++
++static const struct block_device_operations bd_guard_ops = {
++    .open = blkdev_open,
++    .get_block_device = blkdev_get,
++    .owner = THIS_MODULE
++};
++
++static int baseband_guard_probe(struct device *dev)
++{
++    struct block_device *bdev = dev_to_bdev(dev);
++    if (bdev) {
++        bdev->bd_ops = &bd_guard_ops;
++    }
++    return 0;
++}
++
++static struct bus_type block_bus_type = {
++    .name = "block",
++    .probe = baseband_guard_probe,
++};
++
++module_init(baseband_guard_init);
++module_exit(baseband_guard_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Your Name");
++MODULE_DESCRIPTION("Protect critical partitions from being written to.");
++
