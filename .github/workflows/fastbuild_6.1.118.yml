@@ -473,6 +473,37 @@ jobs:
               echo "CONFIG_IP_SET_BITMAP_IPMAC=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_BITMAP_PORT=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_HASH_IP=y" >> ./arch/arm64/configs/gki_defconfig
+      - name: 启用网络功能增强优化配置
+        run: |
+          cd kernel_workspace
+          if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
+            echo "当前工作目录: $(pwd)"
+            
+            # 确保进入common目录
+            cd common
+            echo "当前工作目录: $(pwd)"
+            
+            # 检查gki_defconfig文件是否存在
+            if [ -f "./arch/arm64/configs/gki_defconfig" ]; then
+              echo "找到gki_defconfig文件"
+              
+              # 备份原始配置文件
+              cp ./arch/arm64/configs/gki_defconfig ./arch/arm64/configs/gki_defconfig.backup
+              
+              # 启用 BPF 流解析器
+              echo "CONFIG_BPF_STREAM_PARSER=y" >> ./arch/arm64/configs/gki_defconfig
+              
+              # 开启增强 Netfilter 防火墙扩展模块
+              echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./arch/arm64/configs/gki_defconfig
+              echo "CONFIG_NETFILTER_XT_SET=y" >> ./arch/arm64/configs/gki_defconfig
+              
+              # 启用 IP 集框架
+              echo "CONFIG_IP_SET=y" >> ./arch/arm64/configs/gki_defconfig
+              echo "CONFIG_IP_SET_MAX=65534" >> ./arch/arm64/configs/gki_defconfig
+              echo "CONFIG_IP_SET_BITMAP_IP=y" >> ./arch/arm64/configs/gki_defconfig
+              echo "CONFIG_IP_SET_BITMAP_IPMAC=y" >> ./arch/arm64/configs/gki_defconfig
+              echo "CONFIG_IP_SET_BITMAP_PORT=y" >> ./arch/arm64/configs/gki_defconfig
+              echo "CONFIG_IP_SET_HASH_IP=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_HASH_IPMARK=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_HASH_IPPORT=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_HASH_IPPORTIP=y" >> ./arch/arm64/configs/gki_defconfig
@@ -502,7 +533,7 @@ jobs:
               # 应用基带保护补丁
               wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch
               
-              # [核心修复] 使用 sed 命令修复补丁文件中的 hunk header，将声明的行数从 152 改为 151
+              # 使用 sed 命令修复补丁文件中的 hunk header
               sed -i 's/@@ -0,0 +1,152 @@/@@ -0,0 +1,151 @@/' baseband_guard.patch
               
               if patch -p1 -F 3 < baseband_guard.patch; then
@@ -535,7 +566,6 @@ jobs:
               exit 1
             fi
           fi
-
       - name: 添加 BBR 等一系列拥塞控制算法
         run: |
           if [[ "${{ github.event.inputs.bbr_enable }}" == "true" || "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
