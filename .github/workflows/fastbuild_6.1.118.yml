@@ -390,18 +390,14 @@ jobs:
             
             # 检查gki_defconfig文件是否存在
             if [ -f "./arch/arm64/configs/gki_defconfig" ]; then
-              echo "找到gki_defconfig文件"
-              
+              echo "找到gki_defconfig文件"              
               # 备份原始配置文件
-              cp ./arch/arm64/configs/gki_defconfig ./arch/arm64/configs/gki_defconfig.backup
-              
+              cp ./arch/arm64/configs/gki_defconfig ./arch/arm64/configs/gki_defconfig.backup         
               #启用 BPF 流解析器
-              echo "CONFIG_BPF_STREAM_PARSER=y" >> ./arch/arm64/configs/gki_defconfig
-              
+              echo "CONFIG_BPF_STREAM_PARSER=y" >> ./arch/arm64/configs/gki_defconfig           
               #开启增强 Netfilter 防火墙扩展模块
               echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_NETFILTER_XT_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              
+              echo "CONFIG_NETFILTER_XT_SET=y" >> ./arch/arm64/configs/gki_defconfig          
               #启用 IP 集框架
               echo "CONFIG_IP_SET=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_MAX=65534" >> ./arch/arm64/configs/gki_defconfig
@@ -420,53 +416,22 @@ jobs:
               echo "CONFIG_IP_SET_HASH_NETNET=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_HASH_NETPORT=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_HASH_NETIFACE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_LIST_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              
+              echo "CONFIG_IP_SET_LIST_SET=y" >> ./arch/arm64/configs/gki_defconfig       
               #启用 IPv6 网络地址转换
               echo "CONFIG_IP6_NF_NAT=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 下载并应用config.patch
-              BASEBAND_PATCH_URL="https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/config.patch"
-              wget "$BASEBAND_PATCH_URL" -O config.patch
-              
-              echo "验证config.patch文件类型..."
-              if file --mime-type -b config.patch | grep -q "text/plain"; then
-                echo "config.patch是纯文本文件，继续处理"
-              else
-                echo "错误：下载的config.patch不是纯文本文件"
-                exit 1
-              fi
-              
-              echo "正在应用 config.patch..."
-              # 修复：使用-p1参数应用补丁
-              if patch -p1 --verbose < config.patch; then
-                echo "config.patch 应用成功"
-              else
-                echo "config.patch 应用失败，尝试手动修改..."
-                
-                # 手动应用config.patch的修改内容
-                echo "手动修改 kernel/Makefile..."
-                if [ -f "./kernel/Makefile" ]; then
-                  # 直接添加补丁中的修改内容
-                  sed -i '1i\KSU_VERSION ?= 114514' ./kernel/Makefile
-                  echo "手动修改成功"
-                else
-                  echo "错误：kernel/Makefile 不存在"
-                  ls -la ./kernel || echo "kernel目录不存在"
-                  exit 1
-                fi
-              fi
-              
+              echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./arch/arm64/configs/gki_defconfig              
+              #由于部分机型的vintf兼容性检测规则，在开启CONFIG_IP6_NF_NAT后开机会出现"您的设备内部出现了问题。请联系您的设备制造商了解详情。"的提示，故添加一个配置修复补丁，在编译内核时隐藏CONFIG_IP6_NF_NAT=y但不影响对应功能编译
+              cd common
+              wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
+              patch -p1 -F 3 < config.patch || true
+            fi              
               # 添加基带保护相关配置项
               echo "CONFIG_BASEBAND_GUARD=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./arch/arm64/configs/gki_defconfig
-              
+              echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./arch/arm64/configs/gki_defconfig              
               # 添加 FQ_CODEL 相关配置项
               echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./arch/arm64/configs/gki_defconfig
-              
+              echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./arch/arm64/configs/gki_defconfig              
               # 应用用户提供的GitHub补丁（修复URL）
               echo "正在应用用户提供的基带防护补丁..."
               # 使用原始文件URL而非网页URL
