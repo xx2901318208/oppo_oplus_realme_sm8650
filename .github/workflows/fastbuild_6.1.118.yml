@@ -456,7 +456,7 @@ jobs:
                 mkdir -p drivers/baseband_guard
                 echo "obj-y += baseband_guard.o" > drivers/baseband_guard/Makefile
                 # 下载baseband_guard.c文件
-                wget -O drivers/baseband_guard/baseband_guard.c https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/refs/heads/main/other_patch/baseband_guard.c
+                wget -O drivers/baseband_guard/baseband_guard.c https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/refs/heads/main/other_patch/baseband_guard.patch
                 
                 # 确保drivers/Makefile包含baseband_guard目录
                 if ! grep -q "baseband_guard" drivers/Makefile; then
