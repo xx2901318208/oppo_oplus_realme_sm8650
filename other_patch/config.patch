@@ -29,3 +29,4 @@ index df02908..f654c9b 100644
 +	$(Q)$(config_fix)
  
  $(obj)/kheaders.o: $(obj)/kheaders_data.tar.xz
+ 
