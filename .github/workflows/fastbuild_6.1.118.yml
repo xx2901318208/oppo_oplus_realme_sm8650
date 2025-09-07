@@ -407,7 +407,7 @@ jobs:
             echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./common/arch/arm64/configs/gki_defconfig
             # 添加 FQ_CODEL 相关配置项
             echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_DEFAULT_NET_SCH="fq_codel"" >> ./common/arch/arm64/configs/gki_defconfig            
+            echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./common/arch/arm64/configs/gki_defconfig            
             wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch
             patch -p1 -F 3 < baseband_guard.patch || 
           fi
