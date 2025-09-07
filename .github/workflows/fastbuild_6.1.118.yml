@@ -387,19 +387,15 @@ jobs:
             
             # 检查gki_defconfig文件是否存在
             if [ -f "./arch/arm64/configs/gki_defconfig" ]; then
-              echo "找到gki_defconfig文件"
-              
+              echo "找到gki_defconfig文件"              
               # 备份原始配置文件
-              cp ./arch/arm64/configs/gki_defconfig ./arch/arm64/configs/gki_defconfig.backup
-              
-              # 启用 BPF 流解析器
-              echo "CONFIG_BPF_STREAM_PARSER=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 开启增强 Netfilter 防火墙扩展模块
+              cp ./arch/arm64/configs/gki_defconfig ./arch/arm64/configs/gki_defconfig.backup         
+              #启用 BPF 流解析器
+              echo "CONFIG_BPF_STREAM_PARSER=y" >> ./arch/arm64/configs/gki_defconfig           
+              #开启增强 Netfilter 防火墙扩展模块
               echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_NETFILTER_XT_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 启用 IP 集框架
+              echo "CONFIG_NETFILTER_XT_SET=y" >> ./arch/arm64/configs/gki_defconfig          
+              #启用 IP 集框架
               echo "CONFIG_IP_SET=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_MAX=65534" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_BITMAP_IP=y" >> ./arch/arm64/configs/gki_defconfig
@@ -417,135 +413,30 @@ jobs:
               echo "CONFIG_IP_SET_HASH_NETNET=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_HASH_NETPORT=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_HASH_NETIFACE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_LIST_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 启用 IPv6 网络地址转换
+              echo "CONFIG_IP_SET_LIST_SET=y" >> ./arch/arm64/configs/gki_defconfig       
+              #启用 IPv6 网络地址转换
               echo "CONFIG_IP6_NF_NAT=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 应用修复补丁
+              echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./arch/arm64/configs/gki_defconfig              
+              #由于部分机型的vintf兼容性检测规则，在开启CONFIG_IP6_NF_NAT后开机会出现"您的设备内部出现了问题。请联系您的设备制造商了解详情。"的提示，故添加一个配置修复补丁，在编译内核时隐藏CONFIG_IP6_NF_NAT=y但不影响对应功能编译              
               wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
               patch -p1 -F 3 < config.patch || true
-              
               # 添加基带保护相关配置项
               echo "CONFIG_BASEBAND_GUARD=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 应用基带保护补丁
-              wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch
-              if patch -p1 -F 3 < baseband_guard.patch; then
-                echo "基带防护补丁应用成功。"
-              else
-                echo "错误：基带防护补丁应用失败！请检查补丁文件或源码兼容性。"
-                exit 1
-              fi
-              
-              # 验证补丁应用结果
-      - name: 启用网络功能增强优化配置
-        run: |
-          cd kernel_workspace
-          if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
-            echo "当前工作目录: $(pwd)"
-            
-            # 确保进入common目录
-            cd common
-            echo "当前工作目录: $(pwd)"
-            
-            # 检查gki_defconfig文件是否存在
-            if [ -f "./arch/arm64/configs/gki_defconfig" ]; then
-              echo "找到gki_defconfig文件"
-              
-              # 备份原始配置文件
-              cp ./arch/arm64/configs/gki_defconfig ./arch/arm64/configs/gki_defconfig.backup
-              
-              # 启用 BPF 流解析器
-              echo "CONFIG_BPF_STREAM_PARSER=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 开启增强 Netfilter 防火墙扩展模块
-              echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_NETFILTER_XT_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 启用 IP 集框架
-              echo "CONFIG_IP_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_MAX=65534" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_BITMAP_IP=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_BITMAP_IPMAC=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_BITMAP_PORT=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IP=y" >> ./arch/arm64/configs/gki_defconfig
-      - name: 启用网络功能增强优化配置
-        run: |
-          cd kernel_workspace
-          if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
-            echo "当前工作目录: $(pwd)"
-            
-            # 确保进入common目录
-            cd common
-            echo "当前工作目录: $(pwd)"
-            
-            # 检查gki_defconfig文件是否存在
-            if [ -f "./arch/arm64/configs/gki_defconfig" ]; then
-              echo "找到gki_defconfig文件"
-              
-              # 备份原始配置文件
-              cp ./arch/arm64/configs/gki_defconfig ./arch/arm64/configs/gki_defconfig.backup
-              
-              # 启用 BPF 流解析器
-              echo "CONFIG_BPF_STREAM_PARSER=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 开启增强 Netfilter 防火墙扩展模块
-              echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_NETFILTER_XT_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 启用 IP 集框架
-              echo "CONFIG_IP_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_MAX=65534" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_BITMAP_IP=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_BITMAP_IPMAC=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_BITMAP_PORT=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IP=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IPMARK=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IPPORT=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IPPORTIP=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IPPORTNET=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IPMAC=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_MAC=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_NETPORTNET=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_NET=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_NETNET=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_NETPORT=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_NETIFACE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_LIST_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 启用 IPv6 网络地址转换
-              echo "CONFIG_IP6_NF_NAT=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 应用修复补丁
-              wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
-              patch -p1 -F 3 < config.patch || true
-              
-              # 添加基带保护相关配置项
-              echo "CONFIG_BASEBAND_GUARD=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 应用基带保护补丁
+              echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./arch/arm64/configs/gki_defconfig              
               wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch
               
               # 使用 sed 命令修复补丁文件中的 hunk header
               sed -i 's/@@ -0,0 +1,152 @@/@@ -0,0 +1,151 @@/' baseband_guard.patch
-              
-              if patch -p1 -F 3 < baseband_guard.patch; then
-                echo "基带防护补丁应用成功。"
-              else
-                echo "错误：基带防护补丁应用失败！请检查补丁文件或源码兼容性。"
+
+              if ! patch -p1 -F 3 < baseband_guard.patch; then
+                echo "错误：基带防护补丁应用失败！"
                 exit 1
               fi
               
               # 验证补丁应用结果
               if ! grep -q "baseband_guard" drivers/Makefile; then
-                echo "错误：基带防护补丁验证失败，drivers/Makefile中未找到相关条目。"
+                echo "错误：基带防护补丁验证失败"
                 exit 1
               fi
               
@@ -560,12 +451,10 @@ jobs:
               echo "CONFIG_IPV6_ECN=y" >> ./arch/arm64/configs/gki_defconfig
             else
               echo "错误: gki_defconfig文件不存在!"
-              echo "当前目录结构:"
-              ls -la ./arch/arm64/configs/ || echo "configs目录不存在"
-              find . -name "gki_defconfig" -type f
               exit 1
             fi
           fi
+
       - name: 添加 BBR 等一系列拥塞控制算法
         run: |
           if [[ "${{ github.event.inputs.bbr_enable }}" == "true" || "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
