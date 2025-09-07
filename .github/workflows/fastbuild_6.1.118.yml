@@ -458,50 +458,24 @@ jobs:
               echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./arch/arm64/configs/gki_defconfig
               
-              # 下载并应用baseband_guard.patch
-              echo "正在下载 baseband_guard.patch..."
-              wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch -O baseband_guard.patch
-              
-              echo "正在应用 baseband_guard.patch..."
-              # 关键修复：使用-p0参数并确保工作目录正确
-              if patch -p0 --verbose < baseband_guard.patch; then
-                echo "baseband_guard.patch 应用成功"
+              # 应用修改后的基带保护补丁
+              echo "正在应用 modified_baseband_guard_v2.patch..."
+              # 使用本地补丁文件，假设补丁已上传到仓库的patches目录
+              if [ -f "../patches/modified_baseband_guard_v2.patch" ]; then
+                patch -p1 < ../patches/modified_baseband_guard_v2.patch
+                if [ $? -ne 0 ]; then
+                  echo "modified_baseband_guard_v2.patch 应用失败"
+                  exit 1
+                fi
               else
-                echo "baseband_guard.patch 应用失败，尝试手动创建..."
-                
-                # 创建drivers目录（如果不存在）
-                mkdir -p drivers
-                
-                # 手动修改drivers/Makefile
-                echo "手动修改 drivers/Makefile..."
-                if [ ! -f "./drivers/Makefile" ]; then
-                  echo "创建 drivers/Makefile..."
-                  echo "obj-y += baseband_guard/" > ./drivers/Makefile
-                else
-                  # 添加baseband_guard驱动
-                  sed -i '1i\# 添加 baseband_guard 驱动' ./drivers/Makefile
-                  sed -i '2i\obj-y += baseband_guard/' ./drivers/Makefile
-                fi
-                
-                # 创建baseband_guard目录和文件
-                mkdir -p drivers/baseband_guard
-                echo "obj-y += baseband_guard.o" > drivers/baseband_guard/Makefile
-                
-                # 从补丁中提取baseband_guard.c内容
-                echo "从补丁中提取 baseband_guard.c 内容..."
-                # 提取补丁中baseband_guard.c的部分
-                sed -n '/diff --git a\/drivers\/baseband_guard\/baseband_guard.c/,/index 0000000..17e45c7/p' baseband_guard.patch > baseband_guard_c.patch
-                # 应用这个部分补丁
-                patch -p0 < baseband_guard_c.patch || true
-                
-                # 如果补丁提取失败，创建空文件
-                if [ ! -f "drivers/baseband_guard/baseband_guard.c" ]; then
-                  echo "创建空的 baseband_guard.c..."
-                  touch drivers/baseband_guard/baseband_guard.c
-                  echo "#include <linux/module.h>" > drivers/baseband_guard/baseband_guard.c
-                  echo "MODULE_LICENSE(\"GPL\");" >> drivers/baseband_guard/baseband_guard.c
-                  echo "MODULE_DESCRIPTION(\"Baseband Guard Driver\");" >> drivers/baseband_guard/baseband_guard.c
-                fi
+                echo "错误：modified_baseband_guard_v2.patch 不存在"
+                exit 1
+              fi
+              
+              # 验证补丁应用
+              if ! grep -q "baseband_guard" drivers/Makefile; then
+                echo "基带保护补丁未正确应用"
+                exit 1
               fi
               
               # 添加其他网络配置
@@ -581,12 +555,12 @@ jobs:
           if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
             echo "当前内核版本后缀：${{ github.event.inputs.kernel_suffix }}"
             for f in ./scripts/setlocalversion; do
-              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ github.event.inputs.kernel_suffix }}\"|" "$f"
+              sed -i "$ s|echo \"\$res\"|echo \"-${{ github.event.inputs.kernel_suffix }}\"|" "$f"
             done
           else
             echo "当前内核版本后缀：${{ env.KERNEL_NAME }}"
             for f in ./scripts/setlocalversion; do
-              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
+              sed -i "$ s|echo \"\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
             done
           fi
 
@@ -627,6 +601,22 @@ jobs:
           ccache -s
           echo "编译后空间:"
           df -h
+
+      - name: 验证基带防护模块
+        run: |
+          cd kernel_workspace/common
+          
+          # 检查防护模块符号是否存在
+          if ! nm out/arch/arm64/boot/Image | grep -q "baseband_guard_probe"; then
+            echo "基带防护模块符号缺失，编译失败"
+            exit 1
+          fi
+          
+          # 检查受保护分区配置
+          if ! grep -q "CONFIG_BASEBAND_GUARD=y" out/.config; then
+            echo "基带防护配置未启用"
+            exit 1
+          fi
 
       - name: 应用KPM并修补内核
         run: |
@@ -770,6 +760,7 @@ jobs:
             - BBR/Brutal 等拥塞控制算法支持：${{ github.event.inputs.bbr_enable }}
             - 三星SSG IO调度器支持：${{ env.ssg_enable }}
             - Re-Kernel支持：${{ env.rekernel_enable }}
+            - **基带防护**：已集成modified_baseband_guard_v2.patch，保护modem/boot/vendor_boot/dtbo/abl/xbl等A/B分区
           draft: false
           prerelease: false
           files: |
