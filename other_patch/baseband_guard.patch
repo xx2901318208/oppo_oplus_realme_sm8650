@@ -2,14 +2,14 @@ diff --git a/drivers/Makefile b/drivers/Makefile
 index 6331f1e..b26415a 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
-@@ -123,6 +123,7 @@ obj-$(CONFIG_PTP_1588_CLOCK) += ptp/
- obj-$(CONFIG_PPS)  += pps/
- obj-$(CONFIG_W1)  += w1/
- obj-$(CONFIG_POWER_SUPPLY) += power/
+@@ -121,6 +121,7 @@ obj-$(CONFIG_MD)		+= md/
+ obj-$(CONFIG_BT)		+= bluetooth/
+ obj-$(CONFIG_ACCESSIBILITY)	+= accessibility/
+ obj-$(CONFIG_ISDN)		+= isdn/
 +obj-$(CONFIG_BASEBAND_GUARD) += baseband_guard/
- obj-$(CONFIG_POWER_AVS)  += avs/
- obj-$(CONFIG_HWMON)  += hwmon/
- obj-$(CONFIG_THERMAL)  += thermal/
+ obj-$(CONFIG_EDAC)		+= edac/
+ obj-$(CONFIG_EISA)		+= eisa/
+ obj-$(CONFIG_PM_OPP)		+= opp/
 diff --git a/drivers/baseband_guard/Makefile b/drivers/baseband_guard/Makefile
 new file mode 100644
 index 0000000..0853535
@@ -17,7 +17,6 @@ index 0000000..0853535
 +++ b/drivers/baseband_guard/Makefile
 @@ -0,0 +1 @@
 +obj-$(CONFIG_BASEBAND_GUARD) := baseband_guard.o
-\ No newline at end of file
 diff --git a/drivers/baseband_guard/baseband_guard.c b/drivers/baseband_guard/baseband_guard.c
 new file mode 100644
 index 0000000..9e9a3c1
@@ -150,6 +149,5 @@ index 0000000..9e9a3c1
 +MODULE_AUTHOR("R1263599071");
 +MODULE_DESCRIPTION("Protect critical partitions from being written to.");
 +
-\ No newline at end of file
 
 
