@@ -164,7 +164,7 @@ jobs:
           rm common/android/abi_gki_protected_exports_* || true
           for f in common/scripts/setlocalversion; do
             sed -i 's/ -dirty//g' "$f"
-            sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\''')' "$f"
+            sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
 
       - name: 添加KernelSU
@@ -207,7 +207,7 @@ jobs:
             # 创建版本定义模板&版本格式函数: 使用获取的提交哈希和固定后缀
             # KSU_VERSION_API: API 版本定义
             # KSU_VERSION_FULL: 完整版本定义
-            VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\$1-''"$GIT_COMMIT_HASH"''@Coolapk_1263599071\nendef\n\nKSU_VERSION_API := ''"$KSU_API_VERSION"''\nKSU_VERSION_FULL := v''"$KSU_API_VERSION"''-''"$GIT_COMMIT_HASH"''Coolapk_R1263599071'
+            VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\$1-\'\''"$GIT_COMMIT_HASH"\'\''@Coolapk_1263599071\nendef\n\nKSU_VERSION_API := \'\''"$KSU_API_VERSION"\'\''\nKSU_VERSION_FULL := v\'\''"$KSU_API_VERSION"\'\''-\'\''"$GIT_COMMIT_HASH"\'\''Coolapk_R1263599071'
             
             # 清理内核 Makefile 中的旧版本定义
             # 删除版本函数
@@ -289,7 +289,7 @@ jobs:
           cd kernel_workspace/common
           mkdir -p drivers/baseband_guard
           echo 'obj-$(CONFIG_BASEBAND_GUARD) := baseband_guard.o' > drivers/baseband_guard/Makefile
-          cat << 'EOF' > drivers/baseband_guard/baseband_guard.c
+          echo '#include <linux/module.h>\n#include <linux/kernel.h>\n#include <linux/init.h>\n#include <linux/fs.h>\n#include <linux/kdev_t.h>\n#include <linux/string.h>\n#include <linux/reboot.h>\n#include <linux/device.h>\n#include <linux/blkdev.h>\n\nstatic bool guard_enabled = true;\nmodule_param(guard_enabled, bool, 0644);\nMODULE_PARM_DESC(guard_enabled, "Enable or disable baseband guard");\n\nstatic bool allow_in_recovery = true;\nmodule_param(allow_in_recovery, bool, 0644);\nMODULE_PARM_DESC(allow_in_recovery, "Allow writes in recovery mode");\n\nstatic bool protect_bootimg = true;\nmodule_param(protect_bootimg, bool, 0644);\nMODULE_PARM_DESC(protect_bootimg, "Protect boot, vendor_boot, and dtbo images");\n\nstatic const char *protected_partitions[] = {\n    "modem", "modemst1", "modemst2", "fsg", "fsc",\n    "abl", "xbl", "xbl_config", "hyp", "tz",\n    "devinfo", "sec", "persist", "keystore", "frp",\n    "ssd", "uefisecapp", "logfs", "toolsfv",\n    "opporeserve", "oplusreserve", "multiimgoem",\n    "reserve", "cdt", "ddr", "spunvm", "splash",\n    "vbmeta", "vbmeta_system", "vbmeta_vendor",\n    NULL\n};\n\nstatic const char *boot_partitions[] = {\n    "boot", "vendor_boot", "dtbo", "init_boot",\n    NULL\n};\n\nstatic bool is_recovery_mode(void)\n{\n    if (reboot_mode == REBOOT_MODE_RECOVERY) {\n        return true;\n    }\n    return false;\n}\n\nstatic int check_partition_write(struct block_device *bdev)\n{\n    const char **p;\n    char bdev_name[BDEVNAME_SIZE];\n\n    if (!guard_enabled)\n        return 0;\n\n    if (allow_in_recovery && is_recovery_mode()) {\n        pr_info("baseband_guard: Write allowed in recovery mode\\n");\n        return 0;\n    }\n\n    bdevname(bdev, bdev_name);\n\n    for (p = protected_partitions; *p; ++p) {\n        if (strstr(bdev_name, *p)) {\n            pr_err("baseband_guard: Denying write access to %s\\n", bdev_name);\n            return -EPERM;\n        }\n    }\n\n    if (protect_bootimg) {\n        for (p = boot_partitions; *p; ++p) {\n            if (strstr(bdev_name, *p)) {\n                pr_err("baseband_guard: Denying write access to %s\\n", bdev_name);\n                return -EPERM;\n            }\n        }\n    }\n\n    return 0;\n}\n\nstatic int guard_blkdev_open(struct block_device *bdev, fmode_t mode)\n{\n    if (mode & FMODE_WRITE) {\n        return check_partition_write(bdev);\n    }\n    return 0;\n}\n\nstatic const struct block_device_operations guard_bdev_ops = {\n    .open = guard_blkdev_open,\n    .owner = THIS_MODULE,\n};\n\nstatic int baseband_guard_probe(struct device *dev)\n{\n    struct block_device *bdev = dev_to_bdev(dev);\n    if (bdev) {\n        bdev->bd_ops = &guard_bdev_ops;\n    }\n    return 0;\n}\n\nstatic struct bus_type block_bus_type = {\n    .name = "block",\n    .probe = baseband_guard_probe,\n};\n\nstatic int __init baseband_guard_init(void)\n{\n    pr_info("baseband_guard: Initializing\\n");\n    return bus_register(&block_bus_type);\n}\n\nstatic void __exit baseband_guard_exit(void)\n{\n    pr_info("baseband_guard: Exiting\\n");\n    bus_unregister(&block_bus_type);\n}\n\nmodule_init(baseband_guard_init);\nmodule_exit(baseband_guard_exit);\n\nMODULE_LICENSE("GPL v2");\nMODULE_AUTHOR("R1263599071");\nMODULE_DESCRIPTION("Protect critical partitions from being written to.");\n' > drivers/baseband_guard/baseband_guard.c
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -441,7 +441,7 @@ EOF
             
             if [[ ${{ github.event.inputs.ksu_type }} == "ksunext" ]]; then
               git clone https://github.com/ShirkNeko/SukiSU_patch.git
-            }
+            fi
             
             cd common
             cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./include/linux/
@@ -598,7 +598,7 @@ EOF
           export CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
           export ARCH="arm64"
           export SUBARCH="arm64"
-          export KBUILD_BUILD_USER="cctv18"
+          export KBUILD_BUILD_USER="Coolapk R1263599071"
           export KBUILD_BUILD_HOST="Github-Actions"
           export KBUILD_BUILD_TIMESTAMP="$(date -u "+%Y-%m-%d %H:%M:%S")"
           export TZ="Asia/Shanghai"
@@ -625,7 +625,7 @@ EOF
           cd AnyKernel
           
           # 下载AnyKernel3
-          git clone https://github.com/cctv18/AnyKernel3.git
+          git clone https://github.com/xx2901318208/AnyKernel3.git
           
           # 复制内核镜像
           cp ../common/out/arch/arm64/boot/Image ./AnyKernel3/
