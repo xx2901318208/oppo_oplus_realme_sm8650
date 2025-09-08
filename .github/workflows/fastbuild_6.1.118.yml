@@ -287,6 +287,9 @@ jobs:
       - name: 应用 baseband_guard 补丁
         run: |
           cd kernel_workspace/common
+          mkdir -p drivers/baseband_guard
+          touch drivers/baseband_guard/Makefile
+          touch drivers/baseband_guard/baseband_guard.c
           curl -LSs https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband_guard.patch -o baseband_guard.patch
           # 替换掉patch文件中的\ No newline at end of file
           sed -i ":a;N;s/\\\ No newline at end of file\n//g;ta" baseband_guard.patch
@@ -365,405 +368,173 @@ jobs:
           echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./common/arch/arm64/configs/gki_defconfig
           
           if [[ "${{ github.event.inputs.lz4_enable }}" == "2" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
-            echo "CONFIG_ZSMALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4HC=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_LZ4K=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_CRYPTO_LZ4KD=y" >> ./common/arch/arm64/configs/gki_defconfig
-            echo "CONFIG_CRYPTO_842=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
-          
-          # 开启O2编译优化配置
-          echo "CONFIG_CC_OPTIMIZE_FOR_PERformance=y" >> ./common/arch/arm64/configs/gki_defconfig
-          
-          #禁用 defconfig 检查
-          sed -i 's/check_defconfig(config, defconfig)/#check_defconfig(config, defconfig)/' "./common/scripts/kconfig/conf.c"
-      - name: 启用网络功能增强优化配置
+      - name: 添加bbr配置项
         run: |
-          cd kernel_workspace
-          if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
-            echo "当前工作目录: $(pwd)"
-            
-            # 确保进入common目录
-            cd common
-            echo "当前工作目录: $(pwd)"
-            echo "common目录结构:"
-            ls -la || echo "common目录不存在"
-            
-            # 检查gki_defconfig文件是否存在
-            if [ -f "./arch/arm64/configs/gki_defconfig" ]; then
-              echo "找到gki_defconfig文件"
-              
-              # 备份原始配置文件
-              cp ./arch/arm64/configs/gki_defconfig ./arch/arm64/configs/gki_defconfig.backup
-              
-              #启用 BPF 流解析器
-              echo "CONFIG_BPF_STREAM_PARSER=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              #开启增强 Netfilter 防火墙扩展模块
-              echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_NETFILTER_XT_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              #启用 IP 集框架
-              echo "CONFIG_IP_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_MAX=65534" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_BITMAP_IP=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_BITMAP_IPMAC=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_BITMAP_PORT=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IP=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IPMARK=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IPPORT=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IPPORTIP=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IPPORTNET=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_IPMAC=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_MAC=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_NETPORTNET=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_NET=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_NETNET=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_NETPORT=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_HASH_NETIFACE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP_SET_LIST_SET=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              #启用 IPv6 网络地址转换
-              echo "CONFIG_IP6_NF_NAT=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 下载并应用config.patch
-              echo "正在下载 config.patch..."
-              wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch -O config.patch
-              
-              echo "正在应用 config.patch..."
-              # 关键修复：使用绝对路径指定目标文件
-              if patch -p0 --verbose < config.patch; then
-                echo "config.patch 应用成功"
-              else
-                echo "config.patch 应用失败，尝试手动修改..."
-                
-                # 手动应用config.patch的修改内容
-                echo "手动修改 kernel/Makefile..."
-                if [ -f "./kernel/Makefile" ]; then
-                  # 直接添加补丁中的修改内容
-                  sed -i '1i\KSU_VERSION ?= 114514' ./kernel/Makefile
-                  echo "手动修改成功"
-                else
-                  echo "错误：kernel/Makefile 不存在"
-                  ls -la ./kernel || echo "kernel目录不存在"
-                fi
-              fi
-              
-              # 添加基带保护相关配置项
-              echo "CONFIG_BASEBAND_GUARD=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 添加 FQ_CODEL 相关配置项
-              echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./arch/arm64/configs/gki_defconfig
-              
-              # 下载并应用baseband_guard.patch
-              echo "正在下载 baseband_guard.patch..."
-              wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch -O baseband_guard.patch
-              
-              echo "正在应用 baseband_guard.patch..."
-              # 关键修复：使用-p1参数以匹配patch文件内部路径结构
-              if patch -p1 --verbose < baseband_guard.patch; then
-                echo "baseband_guard.patch 应用成功"
-              else
-                echo "baseband_guard.patch 应用失败，尝试手动创建..."
-                
-                # 创建drivers目录（如果不存在）
-                mkdir -p drivers
-                
-                # 手动修改drivers/Makefile
-                echo "手动修改 drivers/Makefile..."
-                if [ ! -f "./drivers/Makefile" ]; then
-                  echo "创建 drivers/Makefile..."
-                  echo "obj-y += baseband_guard/" > ./drivers/Makefile
-                else
-                  # 添加baseband_guard驱动
-                  sed -i '1i\# 添加 baseband_guard 驱动' ./drivers/Makefile
-                  sed -i '2i\obj-y += baseband_guard/' ./drivers/Makefile
-                fi
-                
-                # 创建baseband_guard目录和文件
-                mkdir -p drivers/baseband_guard
-                echo "obj-y += baseband_guard.o" > drivers/baseband_guard/Makefile
-                
-                # 从补丁中提取baseband_guard.c内容
-                echo "从补丁中提取 baseband_guard.c 内容..."
-                # 提取补丁中baseband_guard.c的部分
-                sed -n '/diff --git a\/drivers\/baseband_guard\/baseband_guard.c/,/index 0000000..17e45c7/p' baseband_guard.patch > baseband_guard_c.patch
-                # 应用这个部分补丁
-                patch -p0 < baseband_guard_c.patch || true
-                
-                # 如果补丁提取失败，创建空文件
-                if [ ! -f "drivers/baseband_guard/baseband_guard.c" ]; then
-                  echo "创建空的 baseband_guard.c..."
-                  touch drivers/baseband_guard/baseband_guard.c
-                  echo "#include <linux/module.h>" > drivers/baseband_guard/baseband_guard.c
-                  echo "MODULE_LICENSE(\"GPL\");" >> drivers/baseband_guard/baseband_guard.c
-                  echo "MODULE_DESCRIPTION(\"Baseband Guard Driver\");" >> drivers/baseband_guard/baseband_guard.c
-                fi
-              fi
-              
-              # 添加其他网络配置
-              echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./arch/arm64/configs/gki_defconfig
-              
-              # ECN配置
-              echo "CONFIG_IP_ECN=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_TCP_ECN=y" >> ./arch/arm64/configs/gki_defconfig
-              echo "CONFIG_IPV6_ECN=y" >> ./arch/arm64/configs/gki_defconfig
-            else
-              echo "错误: gki_defconfig文件不存在!"
-              echo "当前目录结构:"
-              ls -la ./arch/arm64/configs/ || echo "configs目录不存在"
-              find . -name "gki_defconfig" -type f
-            fi
-          fi
-      - name: 添加 BBR 等一系列拥塞控制算法
-        run: |
-          if [[ "${{ github.event.inputs.bbr_enable }}" == "true" || "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
-            echo "正在添加BBR等拥塞控制算法..."
-            cd kernel_workspace/common
-            
-            #开启TCP拥塞控制算法控制器（必需）
-            echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_BBR=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_CUBIC=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_VEGAS=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_NV=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_WESTWOOD=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_HTCP=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_TCP_CONG_BRUTAL=y" >> ./arch/arm64/configs/gki_defconfig
-            
+          if [[ "${{ github.event.inputs.bbr_enable }}" != "false" ]]; then
+            echo "正在添加bbr配置项..."
+            echo "CONFIG_TCP_CONG_BBR=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
             if [[ "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
-              echo "正在将BBR设为默认拥塞控制算法..."
-              echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./arch/arm64/configs/gki_defconfig
-            else
-              echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> ./arch/arm64/configs/gki_defconfig
+              echo "CONFIG_DEFAULT_BBR=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+              echo "CONFIG_DEFAULT_TCP_CONG=\"bbr\"" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
             fi
           fi
-      - name: 启用三星SSG IO调度器
+      - name: 添加SCHED_EEVDF配置项
+        run: |
+          if [[ "${{ github.event.inputs.SCHED_EEVDF }}" != "false" ]]; then
+            echo "正在添加SCHED_EEVDF配置项..."
+            echo "CONFIG_SCHED_EEVDF=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            if [[ "${{ github.event.inputs.SCHED_EEVDF }}" == "default" ]]; then
+              echo "CONFIG_SCHED_DEFAULT_GOV=EEVDF" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            fi
+          fi
+      - name: 添加网络功能增强优化配置项
+        run: |
+          if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
+            echo "正在添加网络功能增强优化配置项..."
+            echo "CONFIG_NETFILTER_XT_MATCH_HASHLIMIT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NETFILTER_XT_MATCH_QUOTA2=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NETFILTER_XT_MATCH_QUOTA2_LOG=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NETFILTER_XT_TARGET_HL=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NETFILTER_XT_TARGET_HMARK=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NETFILTER_XT_TARGET_TPROXY=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NETFILTER_XT_TARGET_REDIRECT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NETFILTER_XT_MATCH_OWNER=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NETFILTER_TPROXY=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NF_NAT_REDIRECT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP_NF_FILTER=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP_NF_TARGET_REJECT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP_NF_NAT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP_NF_MANGLE=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP6_NF_FILTER=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP6_NF_TARGET_REJECT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP6_NF_MANGLE=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP6_NF_NAT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_NF_EBTABLES=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_T_FILTER=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_T_NAT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_BROUTE=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_AMONG=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_802_3=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_ARP=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_IP=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_IP6=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_LIMIT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_MARK=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_PKTTYPE=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_STP=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_VLAN=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_ARPREPLY=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_DNAT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_MARK_T=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_REDIRECT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_SNAT=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_LOG=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_ULOG=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_BRIDGE_EBT_NFLOG=y" >> ./kernel_workspace/common/arch/arm64/configs/gki_defconfig
+          fi
+      - name: 添加三星SSG IO调度器及Re-Kernel支持
         run: |
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "1" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
-            echo "正在启用三星SSG IO调度器..."
-            cd kernel_workspace/common
+            echo "正在添加三星SSG IO调度器..."
+            cd kernel_workspace
             
-            echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./arch/arm64/configs/gki_defconfig
+            if [[ ! -d "./oppo_oplus_realme_sm8650" ]]; then
+              git clone https://github.com/cctv18/oppo_oplus_realme_sm8650.git
+            fi
+            
+            cp ./oppo_oplus_realme_sm8650/ssg_patch/001-ssg.patch ./common/
+            cd ./common
+            patch -p1 < 001-ssg.patch || true
+            echo "CONFIG_IOSCHED_SSG=y" >> ./arch/arm64/configs/gki_defconfig
+            echo "CONFIG_DEFAULT_IOSCHED=\"ssg\"" >> ./arch/arm64/configs/gki_defconfig
           fi
-      - name: 启用Re-Kernel支持
-        run: |
+          
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "2" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
-            echo "正在启用Re-Kernel支持..."
-            cd kernel_workspace/common
+            echo "正在添加Re-Kernel支持..."
+            cd kernel_workspace
             
-            echo "CONFIG_REKERNEL=y" >> ./arch/arm64/configs/gki_defconfig
-          fi
-      - name: 启用 EEVDF 调度器
-        run: |
-          if [[ "${{ github.event.inputs.SCHED_EEVDF }}" == "true" ]]; then
-            echo "正在启用EEVDF支持"
-            cd kernel_workspace/common
+            if [[ ! -d "./oppo_oplus_realme_sm8650" ]]; then
+              git clone https://github.com/cctv18/oppo_oplus_realme_sm8650.git
+            fi
             
-            echo "CONFIG_SCHED_EEVDF=y" >> ./arch/arm64/configs/gki_defconfig
+            cp ./oppo_oplus_realme_sm8650/re_kernel_patch/001-re_kernel.patch ./common/
+            cd ./common
+            patch -p1 < 001-re_kernel.patch || true
+            echo "CONFIG_RE_KERNEL=y" >> ./arch/arm64/configs/gki_defconfig
           fi
-      - name: 添加制作名称
-        run: |
-          cd kernel_workspace/common
-          
-          echo "替换内核版本后缀..."
-          if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            echo "当前内核版本后缀：${{ github.event.inputs.kernel_suffix }}"
-            for f in ./scripts/setlocalversion; do
-              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ github.event.inputs.kernel_suffix }}\"|" "$f"
-            done
-          else
-            echo "当前内核版本后缀：${{ env.KERNEL_NAME }}"
-            for f in ./scripts/setlocalversion; do
-              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
-            done
-          fi
-      - name: 构建内核
-        run: |
-          WORKDIR="$(pwd)"
-          export PATH="/usr/lib/ccache:$PATH"
-          export PATH="$WORKDIR/kernel_workspace/clang20/bin:$PATH"
-          export PATH="$WORKDIR/kernel_workspace/build-tools/bin:$PATH"
-          
-          CLANG_DIR="$WORKDIR/kernel_workspace/clang20/bin"
-          CLANG_VERSION="$($CLANG_DIR/clang --version | head -n 1)"
-          LLD_VERSION="$($CLANG_DIR/ld.lld --version | head -n 1)"
-          
-          echo "编译器信息:"
-          echo "Clang版本: $CLANG_VERSION"
-          echo "LLD版本: $LLD_VERSION"
-          
-          export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
-          export CCACHE_NOHASHDIR="true"
-          export CCACHE_HARDLINK="true"
-          export CCACHE_DIR="${{ env.CCACHE_DIR }}"
-          export CCACHE_MAXSIZE="${{ env.CCACHE_MAXSIZE }}"
-          
-          # 进入common目录构建
-          cd kernel_workspace/common
-          
-          #清理不必要的运行库，清理空间
-          sudo rm -rf /usr/share/dotnet &
-          sudo rm -rf /usr/local/lib/android &
-          sudo rm -rf /opt/ghc &
-          sudo rm -rf /opt/hostedtoolcache/CodeQL &
-          
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig Image
-          
-          echo "内核编译完成！"
-          echo "ccache状态："
-          ccache -s
-          echo "编译后空间:"
-          df -h
-      - name: 应用KPM并修补内核
-        run: |
-          if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
-            echo "正在应用KPM并修补内核..."
-            cd kernel_workspace/common/out/arch/arm64/boot
-            
-            curl -LO https://github.com/ShirkNeko/SukiSU_KernelPatch_patch/releases/download/0.12.0/patch_linux
-            chmod +x patch_linux
-            ./patch_linux
-            
-            rm -f Image
-            mv oImage Image
-          fi
-      - name: 克隆 AnyKernel3 并打包
+      - name: 开始构建内核
         run: |
           cd kernel_workspace
           
-          git clone https://github.com/xx2901318208/AnyKernel3 --depth=1
-          rm -rf ./AnyKernel3/.git
+          export PATH="$PWD/clang20/bin:$PWD/build-tools/linux-x86/bin:$PATH"
+          export CLANG_TRIPLE="aarch64-linux-gnu-"
+          export CROSS_COMPILE="aarch64-linux-gnu-"
+          export CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
+          export ARCH="arm64"
+          export SUBARCH="arm64"
+          export KBUILD_BUILD_USER="cctv18"
+          export KBUILD_BUILD_HOST="Github-Actions"
+          export KBUILD_BUILD_TIMESTAMP="$(date -u "+%Y-%m-%d %H:%M:%S")"
+          export TZ="Asia/Shanghai"
           
-          cd AnyKernel3
-          cp ../common/out/arch/arm64/boot/Image ./Image
+          cd common
           
-          if [[ ! -f ./Image ]]; then
-            echo "未找到内核镜像文件，构建可能出错"
+          # 构建内核
+          make O=out ${{ env.FEIL }}_${{ env.CPU }}_defconfig
+          make O=out -j$(nproc --all)
+          
+          # 检查构建结果
+          if [ -f "out/arch/arm64/boot/Image" ]; then
+            echo "内核构建成功！"
+          else
+            echo "内核构建失败！"
             exit 1
           fi
-          
-          if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
-            KSU_TYPENAME="SukiSU"
-          else
-            KSU_TYPENAME="KSUNext"
-          fi
-          
-          if [[ "${{ github.event.inputs.lz4_enable }}" == "2" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
-            wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/refs/heads/main/ZRAM.zip
-          fi
-          
-          if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            zip -r ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSUVER }}_${{ env.KERNEL_VERSION }}_A15_${{ github.event.inputs.kernel_suffix }}.zip ./*
-          else
-            zip -r ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSUVER }}_${{ env.KERNEL_VERSION }}_A15_${{ env.KERNEL_NAME }}.zip ./*
-          fi
-      - name: 上传 ZIP 工件
-        uses: actions/upload-artifact@v4
-        with:
-          name: Kernel_ZIP_Artifacts
-          path: ${{ github.workspace }}/kernel_workspace/AnyKernel*.zip
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
-      actions: read
-    steps:
-      - name: 下载 ZIP 工件
-        uses: actions/download-artifact@v4
-        with:
-          name: Kernel_ZIP_Artifacts
-          path: ./release_zips
-
-      - name: 设置环境变量
+      - name: 打包内核镜像
         run: |
-          if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            FULL_VERSION=${{ format('{0}.118-{1}', env.KERNEL_VERSION, github.event.inputs.kernel_suffix) }}
-            echo "FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
-            export FULL_VERSION=$FULL_VERSION
-          else
-            FULL_VERSION=${{ format('{0}.118-{1}', env.KERNEL_VERSION, env.KERNEL_NAME) }}
-            echo "FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
-            export FULL_VERSION=$FULL_VERSION
-          fi
+          cd kernel_workspace
           
-          TIME="$(TZ='Asia/Shanghai' date +'%y%m%d%H%M%S')"
-          TIME_FORM="$(TZ='Asia/Shanghai' date +'%Y-%m-%d %H:%M:%S')"
-          echo "TIME=$TIME" >> $GITHUB_ENV
-          echo "TIME_FORM=$TIME_FORM" >> $GITHUB_ENV
+          # 创建打包目录
+          mkdir -p AnyKernel
+          cd AnyKernel
           
-          TAG_HEAD="OPPO+OPlus+Realme-A15-build"
-          echo "TAG_HEAD=$TAG_HEAD" >> $GITHUB_ENV
+          # 下载AnyKernel3
+          git clone https://github.com/cctv18/AnyKernel3.git
           
-          if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
-            KSU_BRANCH="SukiSU Ultra"
-          else
-            KSU_BRANCH="KernelSU Next"
-          fi
-          echo "KSU_BRANCH=$KSU_BRANCH" >> $GITHUB_ENV
+          # 复制内核镜像
+          cp ../common/out/arch/arm64/boot/Image ./AnyKernel3/
           
-          if [[ "${{ github.event.inputs.lz4_enable }}" == "2" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
-            lz4kd_enable="true"
-          else
-            lz4kd_enable="false"
-          fi
+          # 修改anykernel.sh
+          sed -i "s/kernel.string=.*/kernel.string=${{ env.KERNEL_NAME }}-${{ steps.ksu_version.outputs.ksuver }}-${{ github.event.inputs.kernel_suffix }}/g" ./AnyKernel3/anykernel.sh
+          sed -i "s/do.device.check=1/do.device.check=0/g" ./AnyKernel3/anykernel.sh
+          sed -i "s/do.modules=1/do.modules=0/g" ./AnyKernel3/anykernel.sh
+          sed -i "s/do.systemless=1/do.systemless=0/g" ./AnyKernel3/anykernel.sh
+          sed -i "s/do.cleanup=1/do.cleanup=0/g" ./AnyKernel3/anykernel.sh
+          sed -i "s/do.cleanuponabort=1/do.cleanuponabort=0/g" ./AnyKernel3/anykernel.sh
           
-          if [[ "${{ github.event.inputs.lz4_enable }}" == "1" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
-            lz4_zstd_enable="true"
-          else
-            lz4_zstd_enable="false"
-          fi
-          
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "1" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
-            ssg_enable="true"
-          else
-            ssg_enable="false"
-          fi
-          
-          if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "2" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
-            rekernel_enable="true"
-          else
-            rekernel_enable="false"
-          fi
-          
-          echo "lz4kd_enable=$lz4kd_enable" >> $GITHUB_ENV
-          echo "lz4_zstd_enable=$lz4_zstd_enable" >> $GITHUB_ENV
-          echo "ssg_enable=$ssg_enable" >> $GITHUB_ENV
-          echo "rekernel_enable=$rekernel_enable" >> $GITHUB_ENV
-      - name: 创建发布
-        id: create_release
-        uses: softprops/action-gh-release@v1
+          # 打包
+          cd AnyKernel3
+          zip -r9 "${{ env.KERNEL_NAME }}-${{ steps.ksu_version.outputs.ksuver }}-${{ github.event.inputs.kernel_suffix }}".zip * -x .git README.md *placeholder
+      - name: 上传内核到Github-Releases
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: "${{ env.TAG_HEAD }}-${{ env.TIME }}"
-          name: "${{ env.TAG_HEAD }}-${{ env.FULL_VERSION }}"
+          artifacts: "kernel_workspace/AnyKernel/AnyKernel3/*.zip"
+          name: "${{ env.KERNEL_NAME }}-${{ steps.ksu_version.outputs.ksuver }}-${{ github.event.inputs.kernel_suffix }}"
+          tag: "${{ env.KERNEL_NAME }}-${{ steps.ksu_version.outputs.ksuver }}-${{ github.event.inputs.kernel_suffix }}"
           body: |
-            ### 📱 欧加真 Android 15 ${{ env.KSU_BRANCH }} SM8650 通用内核 | 构建信息
-            
-            - 内核版本号: ${{ env.FULL_VERSION }}
-            - 编译时间: ${{ env.TIME_FORM }}
-            - 机型：欧加真骁龙8Gen3 6.1.118 Android 14内核通用
-            - 特性：${{ env.KSU_BRANCH }} + SUSFS + VFS + KPM
-            - hook模式：${{ github.event.inputs.hook_method }}
-            - KPM支持 (仅对sukisu生效)：${{ github.event.inputs.kpm_enable }}
-            - LZ4KD支持：${{ env.lz4kd_enable }}
-            - LZ4支持：${{ env.lz4_zstd_enable }}
-            - 网络功能增强：${{ github.event.inputs.better_net }}
-            - BBR/Brutal 等拥塞控制算法支持：${{ github.event.inputs.bbr_enable }}
-            - 三星SSG IO调度器支持：${{ env.ssg_enable }}
-            - Re-Kernel支持：${{ env.rekernel_enable }}
-          draft: false
-          prerelease: false
-          files: |
-            release_zips/AnyKernel3_*.zip
+            - KernelSU Version: ${{ steps.ksu_version.outputs.ksuver }}
+            - KernelSU Branch: ${{ github.event.inputs.ksu_type }}
+            - Hook Method: ${{ github.event.inputs.hook_method }}
+            - KPM Enabled: ${{ github.event.inputs.kpm_enable }}
+            - LZ4 Enabled: ${{ github.event.inputs.lz4_enable }}
+            - BBR Enabled: ${{ github.event.inputs.bbr_enable }}
+            - SCHED_EEVDF Enabled: ${{ github.event.inputs.SCHED_EEVDF }}
+            - Better Net Enabled: ${{ github.event.inputs.better_net }}
+            - SSG/Re-Kernel Enabled: ${{ github.event.inputs.ssg_rekernel_enable }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
 
