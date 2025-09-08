@@ -287,8 +287,12 @@ jobs:
       - name: 应用 baseband_guard 补丁
         run: |
           cd kernel_workspace/common
-          cp /home/ubuntu/baseband_guard_final.patch ./
-          patch -p1 < baseband_guard_final.patch
+          curl -LSs https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband_guard.patch -o baseband_guard.patch
+          # 替换掉patch文件中的\ No newline at end of file
+          sed -i ":a;N;s/\\\ No newline at end of file\n//g;ta" baseband_guard.patch
+          # 调整drivers/Makefile的patch行号
+          sed -i 's/@@ -123,6 +123,7 @@/@@ -121,6 +121,7 @@/g' baseband_guard.patch
+          patch -p1 < baseband_guard.patch
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
         run: |
           if [[ "${{ github.event.inputs.lz4_enable }}" == "1" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
