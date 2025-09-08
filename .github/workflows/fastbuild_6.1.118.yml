@@ -287,7 +287,7 @@ jobs:
       - name: 应用 baseband_guard 补丁
         run: |
           cd kernel_workspace/common
-          patch -p1 < /home/ubuntu/upload/baseband_guard.patch
+          curl -LSs https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband_guard.patch | patch -p1
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
         run: |
           if [[ "${{ github.event.inputs.lz4_enable }}" == "1" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
