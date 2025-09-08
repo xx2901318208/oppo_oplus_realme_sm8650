@@ -182,13 +182,7 @@ jobs:
           for f in common/scripts/setlocalversion; do
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
-          done
-
-      - name: 应用 Baseband Guard 补丁
-        run: |
-          cd kernel_workspace/common
-          patch -p1 < kernel/livepatch/baseband_guard.patch          
-
+          done          
       - name: 添加KernelSU
         id: ksu_version
         run: |
@@ -290,6 +284,12 @@ jobs:
             patch -p1 -N -F 3 < scope_min_manual_hooks_v1.4.patch || true
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           fi
+          
+      - name: 应用 Baseband Guard 补丁
+        run: |
+          cd kernel_workspace/common
+          patch -p1 < kernel/livepatch/baseband_guard.patch
+          
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
         run: |
           if [[ "${{ github.event.inputs.lz4_enable }}" == "1" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
