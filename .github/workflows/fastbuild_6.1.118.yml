@@ -380,15 +380,12 @@ jobs:
           cd kernel_workspace
           if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
             echo "当前工作目录: $(pwd)"
-            
             cd common
-            echo "当前工作目录: $(pwd)"
-            
             if [ -f "./arch/arm64/configs/gki_defconfig" ]; then
               echo "找到gki_defconfig文件"
               cp ./arch/arm64/configs/gki_defconfig ./arch/arm64/configs/gki_defconfig.backup
               
-              # --- 省略了大量的 echo 命令，保持和你原来的一致 ---
+              # --- 此处省略了所有 echo 添加 CONFIG 的命令，保持和你原来的一致 ---
               echo "CONFIG_BPF_STREAM_PARSER=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_NETFILTER_XT_SET=y" >> ./arch/arm64/configs/gki_defconfig
@@ -422,17 +419,15 @@ jobs:
               
               wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch
               
-              # [核心修复] 确保 sed 命令先执行并成功
+              # [终极修复] 删除补丁文件末尾多余的、错误的文本行
               echo "正在修复 baseband_guard.patch..."
-              sed -i 's/@@ -0,0 +1,152 @@/@@ -0,0 +1,151 @@/' baseband_guard.patch
+              sed -i '$d' baseband_guard.patch
               
-              # [核心修复] 使用修复后的文件应用补丁，并严格检查退出码
               echo "正在应用修复后的 baseband_guard.patch..."
-              if patch -p1 --dry-run --silent < baseband_guard.patch; then
-                echo "补丁预检成功，正式应用..."
-                patch -p1 < baseband_guard.patch
+              if patch -p1 < baseband_guard.patch; then
+                echo "基带防护补丁应用成功。"
               else
-                echo "错误：基带防护补丁预检失败，请检查补丁内容和源码兼容性！"
+                echo "错误：基带防护补丁应用失败！"
                 exit 1
               fi
 
@@ -442,7 +437,7 @@ jobs:
                 exit 1
               fi
               
-              # --- 省略了其他 echo 命令 ---
+              # --- 此处省略了其他 echo 命令 ---
               echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./arch/arm64/configs/gki_defconfig
@@ -454,6 +449,7 @@ jobs:
               exit 1
             fi
           fi
+
 
       - name: 添加 BBR 等一系列拥塞控制算法
         run: |
