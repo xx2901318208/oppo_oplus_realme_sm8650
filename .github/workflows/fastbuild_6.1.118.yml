@@ -154,7 +154,7 @@ jobs:
         run: |
           cd kernel_workspace
           echo "正在克隆源码仓库..."
-          aria2c -s16 -x16 -k1M https://github.com/cctv18/android_kernel_common_oneplus_sm8650/archive/refs/heads/oneplus/sm8650_v_15.0.0_oneplus12_6.1.118.zip -o common.zip && unzip -q common.zip && mv "android_kernel_common_oneplus_sm8650-oneplus-sm8650_v_15.0.0_oneplus12_6.1.118" common && rm -rf common.zip &
+          aria2c -s16 -x16 -k1M https://github.com/realme-kernel-opensource/realme_GT5pro-AndroidV-kernel-source/archive/refs/heads/master.zip -o common.zip && unzip -q common.zip && mv "realme_GT5pro-AndroidV-kernel-source-master" common && rm -rf common.zip &
           echo "正在克隆llvm-Clang20工具链..." && mkdir -p clang20 && aria2c -s16 -x16 -k1M https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang20-r547379/clang-r547379.zip -o clang.zip && unzip -q clang.zip -d clang20 && rm -rf clang.zip &
           echo "正在克隆构建工具..." && aria2c -s16 -x16 -k1M https://github.com/cctv18/oneplus_sm8650_toolchain/releases/download/LLVM-Clang20-r547379/build-tools.zip -o build-tools.zip && unzip -q build-tools.zip && rm -rf build-tools.zip &
           wait
@@ -166,6 +166,10 @@ jobs:
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
+      - name: 应用 baseband_guard 补丁
+        run: |
+          cd kernel_workspace/common
+          patch -p1 < /home/ubuntu/upload/baseband_guard.patch
       - name: 添加KernelSU
         id: ksu_version
         run: |
@@ -320,6 +324,7 @@ jobs:
           cd kernel_workspace
           
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_BASEBAND_GUARD=y" >> ./common/arch/arm64/configs/gki_defconfig
           
           if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -365,7 +370,7 @@ jobs:
           echo "CONFIG_CC_OPTIMIZE_FOR_PERformance=y" >> ./common/arch/arm64/configs/gki_defconfig
           
           #禁用 defconfig 检查
-          sed -i 's/check_defconfig(config, defconfig)/#check_defconfig(config, defconfig)/' "./scripts/kconfig/conf.c"
+          sed -i 's/check_defconfig(config, defconfig)/#check_defconfig(config, defconfig)/' "./common/scripts/kconfig/conf.c"
       - name: 启用网络功能增强优化配置
         run: |
           cd kernel_workspace
