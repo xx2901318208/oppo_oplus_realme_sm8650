@@ -285,10 +285,7 @@ jobs:
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           fi
           
-      - name: 应用 Baseband Guard 补丁
-        run: |
-          cd kernel_workspace/common
-          patch -p1 < kernel/livepatch/baseband_guard.patch
+      
           
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
         run: |
@@ -303,7 +300,7 @@ jobs:
             git apply -p1 < 001-lz4.patch || true
             patch -p1 < 002-zstd.patch || true
           fi
-
+          
       - name: 应用 lz4kd 补丁
         run: |
           if [[ "${{ github.event.inputs.lz4_enable }}" == "2" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
@@ -399,8 +396,41 @@ jobs:
             #由于部分机型的vintf兼容性检测规则，在开启CONFIG_IP6_NF_NAT后开机会出现"您的设备内部出现了问题。请联系您的设备制造商了解详情。"的提示，故添加一个配置修复补丁，在编译内核时隐藏CONFIG_IP6_NF_NAT=y但不影响对应功能编译
             cd..
             wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
-            patch -p1 -F 3 < config.patch || true
+            patch -p1 -F 3 < config.patch || true            
           fi
+      - name: 应用 Baseband Guard 补丁
+        run: |
+          cd kernel_workspace/common
+          # 暂时加上 || true，防止工作流在这里就中断，让我们能看到后面的调试信息
+          patch -p1 < kernel/livepatch/baseband_guard.patch || true
+
+      - name: 调试 Baseband Guard 补丁失败
+        if: failure() || true # 无论上一步是否失败都执行此步骤
+        run: |
+          echo "============================================================"
+          echo "DEBUGGING BASEBAND GUARD PATCH FAILURE"
+          echo "============================================================"
+          
+          cd kernel_workspace/common
+          
+          echo "--- 1. 查看被拒绝的 Hunk (drivers/Kconfig.rej) ---"
+          # .rej 文件记录了失败的代码块
+          cat drivers/Kconfig.rej
+          
+          echo -e "\n--- 2. 查看补丁文件本身期望修改的内容 (drivers/Kconfig 部分) ---"
+          # 从补丁文件中过滤出针对 drivers/Kconfig 的部分
+          sed -n '/--- a\/drivers\/Kconfig/,/--- a\//p' kernel/livepatch/baseband_guard.patch | head -n 20
+          
+          echo -e "\n--- 3. 查看目标文件 drivers/Kconfig 在失败点附近的实际内容 ---"
+          # head -n 20 会显示文件的前20行，失败点在第4行附近，这应该足够了
+          head -n 20 drivers/Kconfig
+          
+          echo "============================================================"
+          echo "请对比上面的 '期望内容' 和 '实际内容'，找出差异。"
+          echo "============================================================"
+          # 强制让工作流失败，以便我们能停下来分析日志
+          exit 1
+          
             # Add tethering config settings 
            echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
