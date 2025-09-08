@@ -206,7 +206,7 @@ jobs:
             # 创建版本定义模板&版本格式函数: 使用获取的提交哈希和固定后缀
             # KSU_VERSION_API: API 版本定义
             # KSU_VERSION_FULL: 完整版本定义
-            VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\\$1-'"$GIT_COMMIT_HASH"$'@Coolapk_1263599071\nendef\n\nKSU_VERSION_API := '"$KSU_API_VERSION"$'\nKSU_VERSION_FULL := v'"$KSU_API_VERSION"$'-'"$GIT_COMMIT_HASH"$'Coolapk_R1263599071'
+            VERSION_DEFINITIONS=$'define get_ksu_version_full\nv\$1-''"$GIT_COMMIT_HASH"''@Coolapk_1263599071\nendef\n\nKSU_VERSION_API := ''"$KSU_API_VERSION"''\nKSU_VERSION_FULL := v''"$KSU_API_VERSION"''-''"$GIT_COMMIT_HASH"''Coolapk_R1263599071'
             
             # 清理内核 Makefile 中的旧版本定义
             # 删除版本函数
@@ -365,7 +365,7 @@ jobs:
           echo "CONFIG_CC_OPTIMIZE_FOR_PERformance=y" >> ./common/arch/arm64/configs/gki_defconfig
           
           #禁用 defconfig 检查
-          sed -i 's/check_defconfig//' ./common/build.config.gki
+          sed -i 's/check_defconfig(config, defconfig)/#check_defconfig(config, defconfig)/' "./scripts/kconfig/conf.c"
       - name: 启用网络功能增强优化配置
         run: |
           cd kernel_workspace
@@ -453,8 +453,8 @@ jobs:
               wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch -O baseband_guard.patch
               
               echo "正在应用 baseband_guard.patch..."
-              # 关键修复：使用-p0参数并确保工作目录正确
-              if patch -p0 --verbose < baseband_guard.patch; then
+              # 关键修复：使用-p1参数以匹配patch文件内部路径结构
+              if patch -p1 --verbose < baseband_guard.patch; then
                 echo "baseband_guard.patch 应用成功"
               else
                 echo "baseband_guard.patch 应用失败，尝试手动创建..."
@@ -754,3 +754,5 @@ jobs:
           prerelease: false
           files: |
             release_zips/AnyKernel3_*.zip
+
+
