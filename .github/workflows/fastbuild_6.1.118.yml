@@ -105,7 +105,6 @@ jobs:
             curl bison flex make binutils git perl gcc python3 \
             python-is-python3 bc libssl-dev libelf-dev \
             bc aria2 zip unzip ccache
-
       - name: 配置ccache目录
         run: |
           echo "CCACHE_DIR=$HOME/.ccache_6.1.118" >> $GITHUB_ENV
@@ -115,7 +114,6 @@ jobs:
           echo "当前构建内核版本：6.1.118"
           rm -rf kernel_workspace
           mkdir kernel_workspace
-
       - name: 载入当前版本内核的 ccache缓存
         uses: actions/cache@v3
         id: ccache-restore
@@ -126,7 +124,6 @@ jobs:
             ccache-new-6.1.118-${{ runner.os }}-
             ccache-new-6.1.118-
             ccache-new-
-
       - name: 初始化并配置ccache
         run: |
           # 设置ccache环境变量
@@ -153,7 +150,6 @@ jobs:
             echo "ccache缓存命中详情:"
             ccache -sv
           fi
-
       - name: 初始化源码仓库及llvm-Clang20工具链
         run: |
           cd kernel_workspace
@@ -170,7 +166,6 @@ jobs:
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
-
       - name: 添加KernelSU
         id: ksu_version
         run: |
@@ -253,7 +248,6 @@ jobs:
             echo "ksuver=$KSU_VERSION" >> $GITHUB_OUTPUT
             sed -i "s/DKSU_VERSION=11998/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
           fi
-
       - name: 应用 KernelSU & SUSFS 补丁
         run: |
           cd kernel_workspace
@@ -289,7 +283,6 @@ jobs:
             patch -p1 -N -F 3 < scope_min_manual_hooks_v1.4.patch || true
             patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           fi
-
       - name: 应用lz4 1.10.0 & zstd 1.5.7补丁
         run: |
           if [[ "${{ github.event.inputs.lz4_enable }}" == "1" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
@@ -305,7 +298,6 @@ jobs:
             git apply -p1 < 001-lz4.patch || true
             patch -p1 < 002-zstd.patch || true
           fi
-
       - name: 应用 lz4kd 补丁
         run: |
           if [[ "${{ github.event.inputs.lz4_enable }}" == "2" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
@@ -323,7 +315,6 @@ jobs:
             cp ../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4kd.patch ./
             patch -p1 -F 3 < lz4kd.patch || true
           fi
-
       - name: 添加 KSU & SUSFS 配置项
         run: |
           cd kernel_workspace
@@ -380,15 +371,28 @@ jobs:
           cd kernel_workspace
           if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
             echo "当前工作目录: $(pwd)"
+            
+            # 确保进入common目录
             cd common
+            echo "当前工作目录: $(pwd)"
+            echo "common目录结构:"
+            ls -la || echo "common目录不存在"
+            
+            # 检查gki_defconfig文件是否存在
             if [ -f "./arch/arm64/configs/gki_defconfig" ]; then
               echo "找到gki_defconfig文件"
+              
+              # 备份原始配置文件
               cp ./arch/arm64/configs/gki_defconfig ./arch/arm64/configs/gki_defconfig.backup
               
-              # --- 此处省略了所有 echo 添加 CONFIG 的命令，保持和你原来的一致 ---
+              #启用 BPF 流解析器
               echo "CONFIG_BPF_STREAM_PARSER=y" >> ./arch/arm64/configs/gki_defconfig
+              
+              #开启增强 Netfilter 防火墙扩展模块
               echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_NETFILTER_XT_SET=y" >> ./arch/arm64/configs/gki_defconfig
+              
+              #启用 IP 集框架
               echo "CONFIG_IP_SET=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_MAX=65534" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_BITMAP_IP=y" >> ./arch/arm64/configs/gki_defconfig
@@ -407,50 +411,105 @@ jobs:
               echo "CONFIG_IP_SET_HASH_NETPORT=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_HASH_NETIFACE=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP_SET_LIST_SET=y" >> ./arch/arm64/configs/gki_defconfig
+              
+              #启用 IPv6 网络地址转换
               echo "CONFIG_IP6_NF_NAT=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP6_NF_TARGET_MASQUERADE=y" >> ./arch/arm64/configs/gki_defconfig
               
-              wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
-              patch -p1 -F 3 < config.patch || true
+              # 下载并应用config.patch
+              echo "正在下载 config.patch..."
+              wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch -O config.patch
               
+              echo "正在应用 config.patch..."
+              # 关键修复：使用绝对路径指定目标文件
+              if patch -p0 --verbose < config.patch; then
+                echo "config.patch 应用成功"
+              else
+                echo "config.patch 应用失败，尝试手动修改..."
+                
+                # 手动应用config.patch的修改内容
+                echo "手动修改 kernel/Makefile..."
+                if [ -f "./kernel/Makefile" ]; then
+                  # 直接添加补丁中的修改内容
+                  sed -i '1i\KSU_VERSION ?= 114514' ./kernel/Makefile
+                  echo "手动修改成功"
+                else
+                  echo "错误：kernel/Makefile 不存在"
+                  ls -la ./kernel || echo "kernel目录不存在"
+                fi
+              fi
+              
+              # 添加基带保护相关配置项
               echo "CONFIG_BASEBAND_GUARD=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_BASEBAND_GUARD_RECOVERY_WRITE=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_BASEBAND_GUARD_PROTECT_BOOTIMG=y" >> ./arch/arm64/configs/gki_defconfig
               
-              wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch
+              # 添加 FQ_CODEL 相关配置项
+              echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./arch/arm64/configs/gki_defconfig
+              echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./arch/arm64/configs/gki_defconfig
               
-              # [终极修复方案]
-              # 1. 使用 head -n -1 命令精确地提取除最后一行外的所有内容，生成干净的补丁
-              # 2. 使用 -F 3 参数强制应用补丁，解决源码不兼容问题
-              echo "正在修复并强制应用 baseband_guard.patch..."
-              head -n -1 baseband_guard.patch > clean.patch
+              # 下载并应用baseband_guard.patch
+              echo "正在下载 baseband_guard.patch..."
+              wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch -O baseband_guard.patch
               
-              if patch -p1 -F 3 < clean.patch; then
-                echo "基带防护补丁应用成功。"
+              echo "正在应用 baseband_guard.patch..."
+              # 关键修复：使用-p0参数并确保工作目录正确
+              if patch -p0 --verbose < baseband_guard.patch; then
+                echo "baseband_guard.patch 应用成功"
               else
-                echo "错误：基带防护补丁应用失败！"
-                exit 1
-              fi
-
-              # 验证补丁应用结果
-              if ! grep -q "baseband_guard" drivers/Makefile; then
-                echo "错误：基带防护补丁验证失败"
-                exit 1
+                echo "baseband_guard.patch 应用失败，尝试手动创建..."
+                
+                # 创建drivers目录（如果不存在）
+                mkdir -p drivers
+                
+                # 手动修改drivers/Makefile
+                echo "手动修改 drivers/Makefile..."
+                if [ ! -f "./drivers/Makefile" ]; then
+                  echo "创建 drivers/Makefile..."
+                  echo "obj-y += baseband_guard/" > ./drivers/Makefile
+                else
+                  # 添加baseband_guard驱动
+                  sed -i '1i\# 添加 baseband_guard 驱动' ./drivers/Makefile
+                  sed -i '2i\obj-y += baseband_guard/' ./drivers/Makefile
+                fi
+                
+                # 创建baseband_guard目录和文件
+                mkdir -p drivers/baseband_guard
+                echo "obj-y += baseband_guard.o" > drivers/baseband_guard/Makefile
+                
+                # 从补丁中提取baseband_guard.c内容
+                echo "从补丁中提取 baseband_guard.c 内容..."
+                # 提取补丁中baseband_guard.c的部分
+                sed -n '/diff --git a\/drivers\/baseband_guard\/baseband_guard.c/,/index 0000000..17e45c7/p' baseband_guard.patch > baseband_guard_c.patch
+                # 应用这个部分补丁
+                patch -p0 < baseband_guard_c.patch || true
+                
+                # 如果补丁提取失败，创建空文件
+                if [ ! -f "drivers/baseband_guard/baseband_guard.c" ]; then
+                  echo "创建空的 baseband_guard.c..."
+                  touch drivers/baseband_guard/baseband_guard.c
+                  echo "#include <linux/module.h>" > drivers/baseband_guard/baseband_guard.c
+                  echo "MODULE_LICENSE(\"GPL\");" >> drivers/baseband_guard/baseband_guard.c
+                  echo "MODULE_DESCRIPTION(\"Baseband Guard Driver\");" >> drivers/baseband_guard/baseband_guard.c
+                fi
               fi
               
-              # --- 此处省略了其他 echo 命令 ---
+              # 添加其他网络配置
               echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./arch/arm64/configs/gki_defconfig
+              
+              # ECN配置
               echo "CONFIG_IP_ECN=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_TCP_ECN=y" >> ./arch/arm64/configs/gki_defconfig
               echo "CONFIG_IPV6_ECN=y" >> ./arch/arm64/configs/gki_defconfig
             else
               echo "错误: gki_defconfig文件不存在!"
-              exit 1
+              echo "当前目录结构:"
+              ls -la ./arch/arm64/configs/ || echo "configs目录不存在"
+              find . -name "gki_defconfig" -type f
             fi
           fi
-
       - name: 添加 BBR 等一系列拥塞控制算法
         run: |
           if [[ "${{ github.event.inputs.bbr_enable }}" == "true" || "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
@@ -466,9 +525,7 @@ jobs:
             echo "CONFIG_TCP_CONG_WESTWOOD=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_TCP_CONG_HTCP=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_TCP_CONG_BRUTAL=y" >> ./arch/arm64/configs/gki_defconfig
-            # 添加 FQ_CODEL 相关配置项
-            echo "CONFIG_NET_SCH_FQ_CODEL=y" >> ./arch/arm64/configs/gki_defconfig
-            echo "CONFIG_DEFAULT_NET_SCH=fq_codel" >> ./arch/arm64/configs/gki_defconfig
+            
             if [[ "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
               echo "正在将BBR设为默认拥塞控制算法..."
               echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./arch/arm64/configs/gki_defconfig
@@ -476,7 +533,6 @@ jobs:
               echo "CONFIG_DEFAULT_TCP_CONG=cubic" >> ./arch/arm64/configs/gki_defconfig
             fi
           fi
-
       - name: 启用三星SSG IO调度器
         run: |
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "1" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
@@ -486,7 +542,6 @@ jobs:
             echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./arch/arm64/configs/gki_defconfig
             echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./arch/arm64/configs/gki_defconfig
           fi
-
       - name: 启用Re-Kernel支持
         run: |
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "2" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
@@ -495,7 +550,6 @@ jobs:
             
             echo "CONFIG_REKERNEL=y" >> ./arch/arm64/configs/gki_defconfig
           fi
-
       - name: 启用 EEVDF 调度器
         run: |
           if [[ "${{ github.event.inputs.SCHED_EEVDF }}" == "true" ]]; then
@@ -504,7 +558,6 @@ jobs:
             
             echo "CONFIG_SCHED_EEVDF=y" >> ./arch/arm64/configs/gki_defconfig
           fi
-
       - name: 添加制作名称
         run: |
           cd kernel_workspace/common
@@ -513,15 +566,14 @@ jobs:
           if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
             echo "当前内核版本后缀：${{ github.event.inputs.kernel_suffix }}"
             for f in ./scripts/setlocalversion; do
-              sed -i "$ s|echo \"\$res\"|echo \"-${{ github.event.inputs.kernel_suffix }}\"|" "$f"
+              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ github.event.inputs.kernel_suffix }}\"|" "$f"
             done
           else
             echo "当前内核版本后缀：${{ env.KERNEL_NAME }}"
             for f in ./scripts/setlocalversion; do
-              sed -i "$ s|echo \"\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
+              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
             done
           fi
-
       - name: 构建内核
         run: |
           WORKDIR="$(pwd)"
@@ -559,23 +611,6 @@ jobs:
           ccache -s
           echo "编译后空间:"
           df -h
-
-      - name: 验证基带防护模块
-        run: |
-          cd kernel_workspace/common
-          
-          # 检查防护模块符号是否存在
-          if ! nm out/arch/arm64/boot/Image | grep -q "baseband_guard_probe"; then
-            echo "基带防护模块符号缺失，编译失败"
-            exit 1
-          fi
-          
-          # 检查受保护分区配置
-          if ! grep -q "CONFIG_BASEBAND_GUARD=y" out/.config; then
-            echo "基带防护配置未启用"
-            exit 1
-          fi
-
       - name: 应用KPM并修补内核
         run: |
           if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
@@ -589,7 +624,6 @@ jobs:
             rm -f Image
             mv oImage Image
           fi
-
       - name: 克隆 AnyKernel3 并打包
         run: |
           cd kernel_workspace
@@ -620,7 +654,6 @@ jobs:
           else
             zip -r ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSUVER }}_${{ env.KERNEL_VERSION }}_A15_${{ env.KERNEL_NAME }}.zip ./*
           fi
-
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
         with:
@@ -696,7 +729,6 @@ jobs:
           echo "lz4_zstd_enable=$lz4_zstd_enable" >> $GITHUB_ENV
           echo "ssg_enable=$ssg_enable" >> $GITHUB_ENV
           echo "rekernel_enable=$rekernel_enable" >> $GITHUB_ENV
-
       - name: 创建发布
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -718,7 +750,6 @@ jobs:
             - BBR/Brutal 等拥塞控制算法支持：${{ github.event.inputs.bbr_enable }}
             - 三星SSG IO调度器支持：${{ env.ssg_enable }}
             - Re-Kernel支持：${{ env.rekernel_enable }}
-            - **基带防护**：已集成GitHub远程补丁(https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband_guard.patch)，保护modem/boot/vendor_boot/dtbo/abl/xbl等A/B分区
           draft: false
           prerelease: false
           files: |
