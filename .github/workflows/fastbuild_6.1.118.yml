@@ -420,10 +420,10 @@ jobs:
               wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch
               
               # [终极修复方案]
-              # 1. 使用 head 命令精确提取前151行，生成一个绝对干净的补丁文件
+              # 1. 使用 head -n -1 命令精确地提取除最后一行外的所有内容，生成干净的补丁
               # 2. 使用 -F 3 参数强制应用补丁，解决源码不兼容问题
               echo "正在修复并强制应用 baseband_guard.patch..."
-              head -n 151 baseband_guard.patch > clean.patch
+              head -n -1 baseband_guard.patch > clean.patch
               
               if patch -p1 -F 3 < clean.patch; then
                 echo "基带防护补丁应用成功。"
@@ -450,6 +450,7 @@ jobs:
               exit 1
             fi
           fi
+
       - name: 添加 BBR 等一系列拥塞控制算法
         run: |
           if [[ "${{ github.event.inputs.bbr_enable }}" == "true" || "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
