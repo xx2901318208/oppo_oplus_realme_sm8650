@@ -400,9 +400,9 @@ jobs:
           fi
       - name: 应用 Baseband Guard 补丁
         run: |
-           cd kernel_workspace/common
-           # 暂时加上 || true，防止工作流在这里就中断，让我们能看到后面的调试信息
-           patch -p1 < kernel/livepatch/baseband_guard.patch || true          
+          cd kernel_workspace/common
+          # 暂时加上 || true，防止工作流在这里就中断，让我们能看到后面的调试信息
+          patch -p1 < kernel/livepatch/baseband_guard.patch || true          
            # Add tethering config settings 
            echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
