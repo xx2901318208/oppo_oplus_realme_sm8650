@@ -191,6 +191,7 @@ jobs:
         run: |
           cd kernel_workspace/common
           patch -p1 < kernel/livepatch/baseband_guard.patch
+          patch -p1 < kernel/livepatch/baseband_guard_kconfig.patch
 
       - name: 添加KernelSU
         id: ksu_version
