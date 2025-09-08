@@ -150,5 +150,3 @@ index 0000000..9e9a3c1
 +MODULE_AUTHOR("R1263599071");
 +MODULE_DESCRIPTION("Protect critical partitions from being written to.");
 +
-\ No newline at end of file
-
