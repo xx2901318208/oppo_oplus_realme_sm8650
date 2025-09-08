@@ -400,38 +400,10 @@ jobs:
           fi
       - name: 应用 Baseband Guard 补丁
         run: |
-          cd kernel_workspace/common
-          # 暂时加上 || true，防止工作流在这里就中断，让我们能看到后面的调试信息
-          patch -p1 < kernel/livepatch/baseband_guard.patch || true
-
-      - name: 调试 Baseband Guard 补丁失败
-        if: failure() || true # 无论上一步是否失败都执行此步骤
-        run: |
-          echo "============================================================"
-          echo "DEBUGGING BASEBAND GUARD PATCH FAILURE"
-          echo "============================================================"
-          
-          cd kernel_workspace/common
-          
-          echo "--- 1. 查看被拒绝的 Hunk (drivers/Kconfig.rej) ---"
-          # .rej 文件记录了失败的代码块
-          cat drivers/Kconfig.rej
-          
-          echo -e "\n--- 2. 查看补丁文件本身期望修改的内容 (drivers/Kconfig 部分) ---"
-          # 从补丁文件中过滤出针对 drivers/Kconfig 的部分
-          sed -n '/--- a\/drivers\/Kconfig/,/--- a\//p' kernel/livepatch/baseband_guard.patch | head -n 20
-          
-          echo -e "\n--- 3. 查看目标文件 drivers/Kconfig 在失败点附近的实际内容 ---"
-          # head -n 20 会显示文件的前20行，失败点在第4行附近，这应该足够了
-          head -n 20 drivers/Kconfig
-          
-          echo "============================================================"
-          echo "请对比上面的 '期望内容' 和 '实际内容'，找出差异。"
-          echo "============================================================"
-          # 强制让工作流失败，以便我们能停下来分析日志
-          exit 1
-          
-            # Add tethering config settings 
+           cd kernel_workspace/common
+           # 暂时加上 || true，防止工作流在这里就中断，让我们能看到后面的调试信息
+           patch -p1 < kernel/livepatch/baseband_guard.patch || true          
+           # Add tethering config settings 
            echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_IP6_NF_MATCH_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
