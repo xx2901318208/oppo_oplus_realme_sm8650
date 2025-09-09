@@ -80,7 +80,7 @@ on:
         description: '是否启用三星SSG IO调度器及Re-Kernel支持(0=均不安装,1=安装SSG IO调度器,2=安装Re-Kernel,3=均安装,默认1)'
         required: true
         type: choice
-        default: '1'
+        default: '3'
         options:
           - '0'
           - '1'
@@ -369,6 +369,7 @@ jobs:
           cd kernel_workspace
           wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch
           patch -p1 < baseband_guard.patch 
+          cd common
           wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
           patch -p1 -F 3 < config.patch || true
           if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
