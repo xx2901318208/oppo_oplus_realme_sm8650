@@ -183,12 +183,6 @@ jobs:
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
           done
-
-      - name: 应用 Baseband Guard 补丁
-        run: |
-          cd kernel_workspace/common
-          patch -p1 < kernel/livepatch/baseband_guard.patch          
-
       - name: 添加KernelSU
         id: ksu_version
         run: |
