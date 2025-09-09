@@ -399,8 +399,6 @@ jobs:
             cd common
             wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
             patch -p1 -F 3 < config.patch || true
-            curl -o baseband_guard.patch https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch
-            patch -p1 < baseband_guard.patch  
           fi
 
            # Add tethering config settings 
@@ -526,7 +524,11 @@ jobs:
             cd kernel_workspace
             echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
-
+      - name: 应用 Baseband Guard 安全补丁
+        run: |
+          cd kernel_workspace/common
+          curl -o baseband_guard.patch https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard.patch
+          patch -p1 < baseband_guard.patch
       - name: 添加制作名称
         run: |
           cd kernel_workspace
