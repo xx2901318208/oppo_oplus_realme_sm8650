@@ -374,7 +374,9 @@ jobs:
         run: |
           cd kernel_workspace
           if [[ "${{ github.event.inputs.better_net }}" == "true" ]]; then
+            #启用  BPF 流解析器,实现高性能网络流量处理,增强网络监控和分析能力
             echo "CONFIG_BPF_STREAM_PARSER=y" >> ./common/arch/arm64/configs/gki_defconfig
+            #开启增强 Netfilter 防火墙扩展模块,支持基于地址类型的匹配规则,启用 IP 集合支持,提高防火墙规则灵活性,支持更复杂的流量过滤策略
             echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_NETFILTER_XT_SET=y" >> ./common/arch/arm64/configs/gki_defconfig
             #启用 IP 集框架及其多种数据结构实现,提供高效的大规模 IP 地址管理,提高防火墙规则处理效率,减少内存占用
@@ -402,8 +404,9 @@ jobs:
             #由于部分机型的vintf兼容性检测规则，在开启CONFIG_IP6_NF_NAT后开机会出现"您的设备内部出现了问题。请联系您的设备制造商了解详情。"的提示，故添加一个配置修复补丁，在编译内核时隐藏CONFIG_IP6_NF_NAT=y但不影响对应功能编译
             cd common
             wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
-            patch -p1 -F 3 < config.patch || true       
+            patch -p1 -F 3 < config.patch || true
           fi
+
            # Add tethering config settings 
            echo "CONFIG_IP_NF_TARGET_TTL=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_IP6_NF_TARGET_HL=y" >> ./common/arch/arm64/configs/gki_defconfig
