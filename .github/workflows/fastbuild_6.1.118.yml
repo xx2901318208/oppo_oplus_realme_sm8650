@@ -162,7 +162,10 @@ jobs:
         run: |
           cd kernel_workspace
           echo "正在克隆源码仓库..."
-          git clone --depth=1 --branch=oneplus/sm8650_v_15.0.0_oneplus12_6.1.118 https://github.com/xx2901318208/android_kernel_common_oneplus_sm8650.git common
+          aria2c -s16 -x16 -k1M https://github.com/xx2901318208/android_kernel_common_oneplus_sm8650/archive/refs/heads/oneplus/sm8650_v_15.0.0_oneplus12_6.1.118.zip -o common.zip && 
+          unzip -q common.zip && 
+          mv "android_kernel_common_oneplus_sm8650-oneplus-sm8650_v_15.0.0_oneplus12_6.1.118" common &&
+          rm -rf common.zip &
           
           echo "正在克隆llvm-Clang20工具链..." &&
           mkdir -p clang20 &&
@@ -182,7 +185,7 @@ jobs:
           for f in common/scripts/setlocalversion; do
             sed -i 's/ -dirty//g' "$f"
             sed -i '$i res=$(echo "$res" | sed '\''s/-dirty//g'\'')' "$f"
-          done          
+          done
       - name: 添加KernelSU
         id: ksu_version
         run: |
