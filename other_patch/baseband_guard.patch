@@ -172,3 +172,4 @@ index 000000000000..749557430582
 +MODULE_LICENSE("GPL v2");
 +MODULE_AUTHOR("R1263599071");
 +MODULE_DESCRIPTION("Protect critical partitions from being written to.");
+ 
