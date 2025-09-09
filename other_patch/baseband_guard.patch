@@ -1,28 +1,52 @@
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 2ac383861c8b..a5895e78377a 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -12,6 +12,7 @@ source "drivers/rapidio/Kconfig"
+ 
+ 
+ source "drivers/base/Kconfig"
++source "drivers/baseband_guard/Kconfig"
+ 
+ source "drivers/bus/Kconfig"
+ 
 diff --git a/drivers/Makefile b/drivers/Makefile
-index 6331f1e..b26415a 100644
+index 2f9c8a44274c..211504952528 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
-@@ -121,6 +121,7 @@ obj-$(CONFIG_MD)		+= md/
- obj-$(CONFIG_BT)		+= bluetooth/
- obj-$(CONFIG_ACCESSIBILITY)	+= accessibility/
- obj-$(CONFIG_ISDN)		+= isdn/
-+obj-$(CONFIG_BASEBAND_GUARD) += baseband_guard/
- obj-$(CONFIG_EDAC)		+= edac/
- obj-$(CONFIG_EISA)		+= eisa/
- obj-$(CONFIG_PM_OPP)		+= opp/
+@@ -122,3 +122,4 @@ obj-$(CONFIG_VIRTIO)	+= virtio/
+ obj-$(CONFIG_VFIO)		+= vfio/
+ obj-y			+= video/
+ obj-$(CONFIG_VHOST)		+= vhost/
++obj-$(CONFIG_BASEBAND_GUARD)	+= baseband_guard/
+diff --git a/drivers/baseband_guard/Kconfig b/drivers/baseband_guard/Kconfig
+new file mode 100644
+index 000000000000..12c054238549
+--- /dev/null
++++ b/drivers/baseband_guard/Kconfig
+@@ -0,0 +1,8 @@
++config BASEBAND_GUARD
++	bool "Baseband Guard support"
++	depends on BLOCK
++	help
++	  This option enables baseband guard support, which protects critical
++	  partitions from unauthorized write access.
++
++
 diff --git a/drivers/baseband_guard/Makefile b/drivers/baseband_guard/Makefile
 new file mode 100644
-index 0000000..0853535
+index 000000000000..e0223120f3e3
 --- /dev/null
 +++ b/drivers/baseband_guard/Makefile
-@@ -0,0 +1 @@
+@@ -0,0 +1,2 @@
 +obj-$(CONFIG_BASEBAND_GUARD) := baseband_guard.o
++
 diff --git a/drivers/baseband_guard/baseband_guard.c b/drivers/baseband_guard/baseband_guard.c
 new file mode 100644
-index 0000000..9e9a3c1
+index 000000000000..749557430582
 --- /dev/null
 +++ b/drivers/baseband_guard/baseband_guard.c
-@@ -0,0 +1,152 @@
+@@ -0,0 +1,127 @@
 +#include <linux/module.h>
 +#include <linux/kernel.h>
 +#include <linux/init.h>
@@ -148,5 +172,3 @@ index 0000000..9e9a3c1
 +MODULE_LICENSE("GPL v2");
 +MODULE_AUTHOR("R1263599071");
 +MODULE_DESCRIPTION("Protect critical partitions from being written to.");
-
-
