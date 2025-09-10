@@ -524,13 +524,33 @@ jobs:
               sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
             done
           fi
-      - name: 应用 Baseband Guard 修复补丁
+      - name: 应用并验证 Baseband Guard 终极修复补丁
         run: |
           cd kernel_workspace/common
+          echo "正在下载补丁..."
           wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard_fix.patch
-          patch -p1 -F 3 < baseband_guard_fix.patch || true
-      
-      - name: 构建内核
+          
+          echo "--- 补丁文件内容 ---"
+          cat baseband_guard_fix.patch
+          echo "--------------------"
+
+          echo "正在应用补丁..."
+          patch -p1 -F 3 < baseband_guard_fix.patch
+          if [ $? -ne 0 ]; then
+            echo "警告：补丁应用失败，但这将被忽略。"
+          else
+            echo "补丁应用成功。"
+          fi
+
+          echo "--- 验证 baseband_guard.c 修改后内容 ---"
+          grep -C 3 "genhd.h" drivers/baseband_guard/baseband_guard.c || echo "未在 C 文件中找到 genhd.h"
+          echo "----------------------------------------"
+          
+          echo "--- 验证 Makefile 修改后内容 ---"
+          cat drivers/baseband_guard/Makefile || echo "未找到 Makefile"
+          echo "--------------------------------"
+
+      - name: 构建内核 (详细日志模式)
         run: |
           WORKDIR="$(pwd)"
           export PATH="/usr/lib/ccache:$PATH"
@@ -550,20 +570,16 @@ jobs:
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="3G"
           
-          cd kernel_workspace
-          #if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
-          #  git clone https://github.com/cctv18/sched_ext.git
-          #  rm -rf ./sched_ext/.git
-          #  rm -rf ./sched_ext/README.md
-          #  cp -r ./sched_ext/* ./common/kernel/sched
-          #fi
-          cd common
-          #在构建内核的同时清除不必要的.NET, Android NDK, Haskell, CodeQL运行库，清理空间且不阻塞后续步骤运行
+          cd kernel_workspace/common
+          
           sudo rm -rf /usr/share/dotnet &
           sudo rm -rf /usr/local/lib/android &
           sudo rm -rf /opt/ghc &
           sudo rm -rf /opt/hostedtoolcache/CodeQL &
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig Image
+
+          # 核心修改：添加 V=1 获取详细编译命令
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error V=1 gki_defconfig Image
+          
           echo "内核编译完成！"
           echo "ccache状态："
           ccache -s
