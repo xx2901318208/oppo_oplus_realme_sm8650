@@ -524,7 +524,12 @@ jobs:
               sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
             done
           fi
-           
+      - name: 应用 Baseband Guard 修复补丁
+        run: |
+          cd kernel_workspace/common
+          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard_fix.patch
+          patch -p1 -F 3 < baseband_guard_fix.patch || true
+      
       - name: 构建内核
         run: |
           WORKDIR="$(pwd)"
