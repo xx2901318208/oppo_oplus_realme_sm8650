@@ -541,11 +541,6 @@ jobs:
           export CCACHE_MAXSIZE="3G"
           
           cd kernel_workspace/common
-          
-          echo "CONFIG_BASEBAND_GUARD=m" >> ./arch/arm64/configs/gki_defconfig
-          echo "确保 baseband_guard 配置已最终写入:"
-          grep "BASEBAND_GUARD" ./arch/arm64/configs/gki_defconfig
-          
           sudo rm -rf /usr/share/dotnet &
           sudo rm -rf /usr/local/lib/android &
           sudo rm -rf /opt/ghc &
