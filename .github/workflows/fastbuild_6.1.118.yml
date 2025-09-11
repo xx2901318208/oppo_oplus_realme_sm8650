@@ -356,8 +356,6 @@ jobs:
           fi
           # 开启O2编译优化配置
           echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 添加 Baseband Guard 配置
-          echo "CONFIG_BASEBAND_GUARD=m" >> ./common/arch/arm64/configs/gki_defconfig
           #禁用 defconfig 检查           
           cd common
           wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
@@ -521,7 +519,7 @@ jobs:
             for f in ./common/scripts/setlocalversion; do
               sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
             done
-          fi
+          fi      
       - name: 构建内核 (详细日志模式)
         run: |
           WORKDIR="$(pwd)"
@@ -543,6 +541,10 @@ jobs:
           export CCACHE_MAXSIZE="3G"
           
           cd kernel_workspace/common
+          
+          echo "CONFIG_BASEBAND_GUARD=m" >> ./arch/arm64/configs/gki_defconfig
+          echo "确保 baseband_guard 配置已最终写入:"
+          grep "BASEBAND_GUARD" ./arch/arm64/configs/gki_defconfig
           
           sudo rm -rf /usr/share/dotnet &
           sudo rm -rf /usr/local/lib/android &
