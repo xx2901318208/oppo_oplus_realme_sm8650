@@ -357,7 +357,7 @@ jobs:
           # 开启O2编译优化配置
           echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> ./common/arch/arm64/configs/gki_defconfig
           # 添加 Baseband Guard 配置
-          echo "CONFIG_BASEBAND_GUARD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          echo "CONFIG_BASEBAND_GUARD=m" >> ./common/arch/arm64/configs/gki_defconfig
           #禁用 defconfig 检查           
           cd common
           wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
@@ -550,7 +550,7 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache/CodeQL &
 
           # 核心修改：添加 V=1 获取详细编译命令
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error V=1 gki_defconfig Image
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error V=1 gki_defconfig Image  modules
           
           echo "内核编译完成！"
           echo "ccache状态："
