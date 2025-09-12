@@ -367,7 +367,7 @@ jobs:
           patch -p1 -F 3 < 0001-add-baseband-guard-driver.patch || true
           patch -p1 -F 3 < 0002-link-kconfig.patch || true
           patch -p1 -F 3 < 0003-link-makefile.patch || true
-          echo "Baseband Guard 已成功集成到构建体系中！"
+          echo "Baseband Guard 已成功集成到构建体系中"        
       - name: 启用网络功能增强优化配置
         run: |
           cd kernel_workspace
@@ -437,6 +437,20 @@ jobs:
            echo "CONFIG_ION_CARVEOUT_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_ION_CHUNK_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_ION_CMA_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_SECURITY=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_SECURITY_NETWORK=y" >> ./common/arch/arm64/configs/gki_defconfig
+           
+           echo "CONFIG_LSM_HOOK_EVM_POST_READ=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_LSM_HOOK_INIT_TASK=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_LSM_HOOK_TASK_ALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_LSM_HOOK_TASK_FREE=y" >> ./common/arch/arm64/configs/gki_defconfig           
+           echo "CONFIG_SECURITY_SELINUX=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=1" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_DEFAULT_SECURITY_SELINUX=y" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "CONFIG_DEFAULT_SECURITY=\"selinux\"" >> ./common/arch/arm64/configs/gki_defconfig
+           echo "LSM 框架及 SELinux 已配置完毕！"
            # ===== 用户态算法接口 =====
            echo "CONFIG_CRYPTO_USER_API_HASH=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_CRYPTO_USER_API_SKCIPHER=y" >> ./common/arch/arm64/configs/gki_defconfig
