@@ -86,6 +86,14 @@ on:
           - '1'
           - '2'
           - '3'
+      baseband_enable:
+        description: '是否启用baseband防格机)'
+        required: true
+        type: choice
+        default: 'true'
+        options:
+          - 'true'
+          - 'false'
       kernel_suffix:
         description: '内核后缀(留空默认,开头别加连字符,勿加空格等影响指令运行的保留字符)'
         required: false
@@ -395,18 +403,6 @@ jobs:
            echo "CONFIG_ION_CMA_HEAP=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_SECURITY=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_SECURITY_NETWORK=y" >> ./common/arch/arm64/configs/gki_defconfig
-           
-           echo "CONFIG_LSM_HOOK_EVM_POST_READ=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_LSM_HOOK_INIT_TASK=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_LSM_HOOK_TASK_ALLOC=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_LSM_HOOK_TASK_FREE=y" >> ./common/arch/arm64/configs/gki_defconfig           
-           echo "CONFIG_SECURITY_SELINUX=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_SECURITY_SELINUX_BOOTPARAM=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_SECURITY_SELINUX_DEVELOP=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=1" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_DEFAULT_SECURITY_SELINUX=y" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "CONFIG_DEFAULT_SECURITY=\"selinux\"" >> ./common/arch/arm64/configs/gki_defconfig
-           echo "LSM 框架及 SELinux 已配置完毕！"
            # ===== 用户态算法接口 =====
            echo "CONFIG_CRYPTO_USER_API_HASH=y" >> ./common/arch/arm64/configs/gki_defconfig
            echo "CONFIG_CRYPTO_USER_API_SKCIPHER=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -437,10 +433,7 @@ jobs:
            sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' ./common/arch/arm64/configs/gki_defconfig
           cd common
           wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
-          patch -p1 -F 3 < config.patch || true
-          wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband.patch
-          patch -p1 -F 3 < baseband.patch || true
-          echo "Baseband Guard 已成功集成到构建体系中"      
+          patch -p1 -F 3 < config.patch || true               
           #禁用 defconfig 检查
           sed -i 's/check_defconfig//' ./common/build.config.gki
       - name: 启用网络功能增强优化配置
@@ -507,7 +500,15 @@ jobs:
             echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
-
+      - name: 启用baseband 防格机
+        run: |
+          if [[ "${{ github.event.inputs.baseband_enable }}" == "true" ]]; then
+            echo "正在启用baseband"
+            cd kernel_workspace/common
+            wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband.patch
+            patch -p1 -F 3 < baseband.patch || true
+            echo "Baseband Guard 已成功集成到构建体系中"
+          fi
       - name: 启用Re-Kernel支持
         run: |
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "2" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
