@@ -573,28 +573,65 @@ jobs:
           
       - name: 克隆 AnyKernel3 并打包
         run: |
+          echo "开始打包内核..."
           cd kernel_workspace
+          
+          echo "克隆 AnyKernel3 仓库..."
           git clone https://github.com/xx2901318208/AnyKernel3 --depth=1
           rm -rf ./AnyKernel3/.git
-          cd AnyKernel3
-          cp ../common/out/arch/arm64/boot/Image ./Image
-          if [[ ! -f ./Image ]]; then
-            echo "未找到内核镜像文件，构建可能出错"
+          
+          echo "正在复制内核镜像 (Image )..."
+          if [[ -f common/out/arch/arm64/boot/Image ]]; then
+            cp common/out/arch/arm64/boot/Image ./AnyKernel3/Image
+            echo "内核镜像复制成功。"
+          else
+            echo "错误：未找到内核镜像文件！构建失败。"
             exit 1
           fi
+
+          echo "正在查找并复制 baseband_guard.ko 模块..."
+          # 在整个 out 目录中查找 .ko 文件，以防它被编译到非预期的子目录
+          KO_PATH=$(find common/out -type f -name "baseband_guard.ko")
+          
+          if [[ -z "$KO_PATH" ]]; then
+            echo "警告：未找到 baseband_guard.ko 文件！"
+            echo "打包将继续，但自定义模块功能将会缺失。"
+          else
+            echo "已找到模块，路径: $KO_PATH"
+            # 为GKI 2.0创建标准的目标目录结构
+            # 目标路径: /vendor_dlkm/lib/modules/
+            # AnyKernel3 会自动处理 vendor_dlkm 目录
+            mkdir -p ./AnyKernel3/vendor_dlkm/lib/modules/
+            
+            # 复制 .ko 文件到目标目录
+            cp "$KO_PATH" ./AnyKernel3/vendor_dlkm/lib/modules/
+            echo "baseband_guard.ko 已成功复制到刷机包的 vendor_dlkm/lib/modules/ 目录。"
+          fi
+          
+          # 进入 AnyKernel3 目录准备打包
+          cd AnyKernel3
+          
+          # 根据您的原始逻辑确定 KernelSU 类型名称
           if [[ ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
             KSU_TYPENAME="SukiSU"
           else
             KSU_TYPENAME="KSUNext"
           fi
+          
+          # 根据您的原始逻辑下载 ZRAM 补丁（如果需要）
           if [[ "${{ github.event.inputs.lz4_enable }}" == "2" || "${{ github.event.inputs.lz4_enable }}" == "3" ]]; then
             wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/refs/heads/main/ZRAM.zip
           fi
+          
+          echo "正在创建 ZIP 刷机包..."
+          # 根据您的原始逻辑生成最终的 zip 文件名
           if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
-            zip -r ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSUVER }}_${{ env.KERNEL_VERSION }}_A15_${{ github.event.inputs.kernel_suffix }}.zip ./*
+            zip -r9 ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSUVER }}_${{ env.KERNEL_VERSION }}_A15_${{ github.event.inputs.kernel_suffix }}.zip ./*
           else
-            zip -r ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSUVER }}_${{ env.KERNEL_VERSION }}_A15_${{ env.KERNEL_NAME }}.zip ./*
+            zip -r9 ../AnyKernel3_${KSU_TYPENAME}_${{ env.KSUVER }}_${{ env.KERNEL_VERSION }}_A15_${{ env.KERNEL_NAME }}.zip ./*
           fi
+          echo "ZIP 刷机包创建完成！"
+
 
       - name: 上传 ZIP 工件
         uses: actions/upload-artifact@v4
