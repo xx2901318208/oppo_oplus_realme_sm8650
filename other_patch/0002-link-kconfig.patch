@@ -1,0 +1,10 @@
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -21,6 +21,8 @@
+ 
+ source "security/selinux/Kconfig"
+ source "security/smack/Kconfig"
++source "drivers/baseband_guard/Kconfig"
+ 
+ config TOMOYO
+ 	bool "TOMOYO Linux"
