@@ -435,8 +435,6 @@ jobs:
            sed -i 's/CONFIG_CRYPTO_POLYVAL_ARM64_CE=.*/CONFIG_CRYPTO_POLYVAL_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
            sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE_BLK=.*/CONFIG_CRYPTO_AES_ARM64_CE_BLK=y/' ./common/arch/arm64/configs/gki_defconfig
            sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' ./common/arch/arm64/configs/gki_defconfig
-          #禁用 defconfig 检查
-          sed -i 's/check_defconfig//' ./common/build.config.gki
           cd common
           wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
           patch -p1 -F 3 < config.patch || true
@@ -446,7 +444,9 @@ jobs:
           patch -p1 -F 3 < 0001-add-baseband-guard-driver.patch || true
           patch -p1 -F 3 < 0002-link-kconfig.patch || true
           patch -p1 -F 3 < 0003-link-makefile.patch || true
-          echo "Baseband Guard 已成功集成到构建体系中"        
+          echo "Baseband Guard 已成功集成到构建体系中"      
+          #禁用 defconfig 检查
+          sed -i 's/check_defconfig//' ./common/build.config.gki
       - name: 启用网络功能增强优化配置
         run: |
           cd kernel_workspace
@@ -534,85 +534,53 @@ jobs:
           if [[ -n "${{ github.event.inputs.kernel_suffix }}" ]]; then
             echo "当前内核版本后缀：${{ github.event.inputs.kernel_suffix }}"
             for f in ./common/scripts/setlocalversion; do
-              sed -i "s|echo \"\\\$res\"|echo \"-${{ github.event.inputs.kernel_suffix }}\"|" "$f"
+              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ github.event.inputs.kernel_suffix }}\"|" "$f"
             done
           else
             echo "当前内核版本后缀：${{ env.KERNEL_NAME }}"
             for f in ./common/scripts/setlocalversion; do
-              sed -i "s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
+              sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
             done
-          fi   
-          
-          - name: 构建内核
-            run: |
-              WORKDIR="$(pwd)"
-              export PATH="/usr/lib/ccache:$PATH"
-              export PATH="$WORKDIR/kernel_workspace/clang20/bin:$PATH"
-              export PATH="$WORKDIR/kernel_workspace/build-tools/bin:$PATH"
-              CLANG_DIR="$WORKDIR/kernel_workspace/clang20/bin"
-              CLANG_VERSION="$($CLANG_DIR/clang --version | head -n 1)"
-              LLD_VERSION="$($CLANG_DIR/ld.lld --version | head -n 1)"
-              echo "编译器信息:"
-              echo "Clang版本: $CLANG_VERSION"
-              echo "LLD版本: $LLD_VERSION"
-              pahole_version=$(pahole --version 2>/dev/null | head -n1); [ -z "$pahole_version" ] && echo "pahole版本：未安装" || echo "pahole版本：$pahole_version"
-              
-              export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
-              export CCACHE_NOHASHDIR="true"
-              export CCACHE_HARDLINK="true"
-              export CCACHE_DIR="${{ env.CCACHE_DIR }}"
-              export CCACHE_MAXSIZE="3G"
-              
-              cd kernel_workspace
-              #if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
-              #  git clone https://github.com/cctv18/sched_ext.git
-              #  rm -rf ./sched_ext/.git
-              #  rm -rf ./sched_ext/README.md
-              #  cp -r ./sched_ext/* ./common/kernel/sched
-              #fi
-              cd common
-              #在构建内核的同时清除不必要的.NET, Android NDK, Haskell, CodeQL运行库，清理空间且不阻塞后续步骤运行
-              sudo rm -rf /usr/share/dotnet &
-              sudo rm -rf /usr/local/lib/android &
-              sudo rm -rf /opt/ghc &
-              sudo rm -rf /opt/hostedtoolcache/CodeQL &
-
-              # 第一步：生成 .config 文件到 out/ 目录
-              make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out gki_defconfig
-
-              # 第二步：修改 out/.config 文件，强制启用LSM和baseband_guard
-              # 注意：这里我们确保 scripts/config 操作的是 out/.config
-              scripts/config --file out/.config -e SECURITY
-              scripts/config --file out/.config -e SECURITYFS
-              scripts/config --file out/.config -e SECURITY_NETWORK
-              scripts/config --file out/.config -e SECURITY_PATH
-              scripts/config --file out/.config -e INTEGRITY
-              scripts/config --file out/.config -e SECURITY_SELINUX
-              scripts/config --file out/.config -e DEFAULT_SECURITY_SELINUX
-              scripts/config --file out/.config --set-str DEFAULT_SECURITY "selinux"
-              scripts/config --file out/.config -e BASEBAND_GUARD
-
-              # 第三步：编译内核镜像
-              make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
-
-              echo "内核编译完成！"
-              echo "ccache状态："
-              ccache -s
-              echo "编译后空间:"
-              df -h
-
-      - name: 打印最终生效的内核配置
+          fi
+      - name: 构建内核
         run: |
-          echo "--- 最终生效的 .config 文件内容开始 ---"
-          cat kernel_workspace/common/out/.config
-          echo "--- 最终生效的 .config 文件内容结束 ---"
+          WORKDIR="$(pwd)"
+          export PATH="/usr/lib/ccache:$PATH"
+          export PATH="$WORKDIR/kernel_workspace/clang20/bin:$PATH"
+          export PATH="$WORKDIR/kernel_workspace/build-tools/bin:$PATH"
+          CLANG_DIR="$WORKDIR/kernel_workspace/clang20/bin"
+          CLANG_VERSION="$($CLANG_DIR/clang --version | head -n 1)"
+          LLD_VERSION="$($CLANG_DIR/ld.lld --version | head -n 1)"
+          echo "编译器信息:"
+          echo "Clang版本: $CLANG_VERSION"
+          echo "LLD版本: $LLD_VERSION"
+          pahole_version=$(pahole --version 2>/dev/null | head -n1); [ -z "$pahole_version" ] && echo "pahole版本：未安装" || echo "pahole版本：$pahole_version"
           
-          echo "--- 检查关键LSM配置 ---"
-          grep "CONFIG_SECURITY_SELINUX" kernel_workspace/common/out/.config || echo "CONFIG_SECURITY_SELINUX 未找到或未启用"
-          grep "CONFIG_DEFAULT_SECURITY" kernel_workspace/common/out/.config || echo "CONFIG_DEFAULT_SECURITY 未找到或未启用"
-          grep "CONFIG_SECURITY=" kernel_workspace/common/out/.config || echo "CONFIG_SECURITY 未找到或未启用"
-          grep "CONFIG_BASEBAND_GUARD" kernel_workspace/common/out/.config || echo "CONFIG_BASEBAND_GUARD 未找到或未启用"
+          export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
+          export CCACHE_NOHASHDIR="true"
+          export CCACHE_HARDLINK="true"
+          export CCACHE_DIR="${{ env.CCACHE_DIR }}"
+          export CCACHE_MAXSIZE="3G"
           
+          cd kernel_workspace
+          #if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
+          #  git clone https://github.com/cctv18/sched_ext.git
+          #  rm -rf ./sched_ext/.git
+          #  rm -rf ./sched_ext/README.md
+          #  cp -r ./sched_ext/* ./common/kernel/sched
+          #fi
+          cd common
+          #在构建内核的同时清除不必要的.NET, Android NDK, Haskell, CodeQL运行库，清理空间且不阻塞后续步骤运行
+          sudo rm -rf /usr/share/dotnet &
+          sudo rm -rf /usr/local/lib/android &
+          sudo rm -rf /opt/ghc &
+          sudo rm -rf /opt/hostedtoolcache/CodeQL &       
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig Image
+          echo "内核编译完成！"
+          echo "ccache状态："
+          ccache -s
+          echo "编译后空间:"
+          df -h
       - name: 应用KPM并修补内核
         run: |
           if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
