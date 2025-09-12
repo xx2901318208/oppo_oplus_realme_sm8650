@@ -581,7 +581,18 @@ jobs:
           ccache -s
           echo "编译后空间:"
           df -h
-         
+      - name: 打印最终生效的内核配置
+        run: |
+          echo "--- 最终生效的 .config 文件内容开始 ---"
+          cat kernel_workspace/common/out/.config
+          echo "--- 最终生效的 .config 文件内容结束 ---"
+          
+          echo "--- 检查关键LSM配置 ---"
+          grep "CONFIG_SECURITY_SELINUX" kernel_workspace/common/out/.config || echo "CONFIG_SECURITY_SELINUX 未找到或未启用"
+          grep "CONFIG_DEFAULT_SECURITY" kernel_workspace/common/out/.config || echo "CONFIG_DEFAULT_SECURITY 未找到或未启用"
+          grep "CONFIG_SECURITY=" kernel_workspace/common/out/.config || echo "CONFIG_SECURITY 未找到或未启用"
+          grep "CONFIG_BASEBAND_GUARD" kernel_workspace/common/out/.config || echo "CONFIG_BASEBAND_GUARD 未找到或未启用"
+          
       - name: 应用KPM并修补内核
         run: |
           if [[ ${{ github.event.inputs.kpm_enable }} == 'true' && ${{ github.event.inputs.ksu_type }} == "sukisu" ]]; then
