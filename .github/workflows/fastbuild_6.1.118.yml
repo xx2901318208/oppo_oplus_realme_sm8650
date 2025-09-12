@@ -541,59 +541,65 @@ jobs:
             for f in ./common/scripts/setlocalversion; do
               sed -i "\$s|echo \"\\\$res\"|echo \"-${{ env.KERNEL_NAME }}\"|" "$f"
             done
-          fi      
-      - name: 构建内核
-        run: |
-          WORKDIR="$(pwd)"
-          export PATH="/usr/lib/ccache:$PATH"
-          export PATH="$WORKDIR/kernel_workspace/clang20/bin:$PATH"
-          export PATH="$WORKDIR/kernel_workspace/build-tools/bin:$PATH"
-          CLANG_DIR="$WORKDIR/kernel_workspace/clang20/bin"
-          CLANG_VERSION="$($CLANG_DIR/clang --version | head -n 1)"
-          LLD_VERSION="$($CLANG_DIR/ld.lld --version | head -n 1)"
-          echo "编译器信息:"
-          echo "Clang版本: $CLANG_VERSION"
-          echo "LLD版本: $LLD_VERSION"
-          pahole_version=$(pahole --version 2>/dev/null | head -n1); [ -z "$pahole_version" ] && echo "pahole版本：未安装" || echo "pahole版本：$pahole_version"
+          fi   
+          
+          - name: 构建内核
+            run: |
+              WORKDIR="$(pwd)"
+              export PATH="/usr/lib/ccache:$PATH"
+              export PATH="$WORKDIR/kernel_workspace/clang20/bin:$PATH"
+              export PATH="$WORKDIR/kernel_workspace/build-tools/bin:$PATH"
+              CLANG_DIR="$WORKDIR/kernel_workspace/clang20/bin"
+              CLANG_VERSION="$($CLANG_DIR/clang --version | head -n 1)"
+              LLD_VERSION="$($CLANG_DIR/ld.lld --version | head -n 1)"
+              echo "编译器信息:"
+              echo "Clang版本: $CLANG_VERSION"
+              echo "LLD版本: $LLD_VERSION"
+              pahole_version=$(pahole --version 2>/dev/null | head -n1); [ -z "$pahole_version" ] && echo "pahole版本：未安装" || echo "pahole版本：$pahole_version"
               
-          export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
-          export CCACHE_NOHASHDIR="true"
-          export CCACHE_HARDLINK="true"
-          export CCACHE_DIR="${{ env.CCACHE_DIR }}"
-          export CCACHE_MAXSIZE="3G"
+              export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
+              export CCACHE_NOHASHDIR="true"
+              export CCACHE_HARDLINK="true"
+              export CCACHE_DIR="${{ env.CCACHE_DIR }}"
+              export CCACHE_MAXSIZE="3G"
               
-          cd kernel_workspace
-          #if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
-          #  git clone https://github.com/cctv18/sched_ext.git
-          #  rm -rf ./sched_ext/.git
-          #  rm -rf ./sched_ext/README.md
-          #  cp -r ./sched_ext/* ./common/kernel/sched
-          #fi
-          cd common
-          #在构建内核的同时清除不必要的.NET, Android NDK, Haskell, CodeQL运行库，清理空间且不阻塞后续步骤运行
-          sudo rm -rf /usr/share/dotnet &
-          sudo rm -rf /usr/local/lib/android &
-          sudo rm -rf /opt/ghc &
-          sudo rm -rf /opt/hostedtoolcache/CodeQL &
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out gki_defconfig
-          scripts/config --file out/.config -e SECURITY
-          scripts/config --file out/.config -e SECURITYFS
-          scripts/config --file out/.config -e SECURITY_NETWORK
-          scripts/config --file out/.config -e SECURITY_PATH
-          scripts/config --file out/.config -e INTEGRITY
-          scripts/config --file out/.config -e SECURITY_SELINUX
-          scripts/config --file out/.config -e DEFAULT_SECURITY_SELINUX
-          scripts/config --file out/.config --set-str DEFAULT_SECURITY "selinux"
-          scripts/config --file out/.config -e BASEBAND_GUARD
+              cd kernel_workspace
+              #if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
+              #  git clone https://github.com/cctv18/sched_ext.git
+              #  rm -rf ./sched_ext/.git
+              #  rm -rf ./sched_ext/README.md
+              #  cp -r ./sched_ext/* ./common/kernel/sched
+              #fi
+              cd common
+              #在构建内核的同时清除不必要的.NET, Android NDK, Haskell, CodeQL运行库，清理空间且不阻塞后续步骤运行
+              sudo rm -rf /usr/share/dotnet &
+              sudo rm -rf /usr/local/lib/android &
+              sudo rm -rf /opt/ghc &
+              sudo rm -rf /opt/hostedtoolcache/CodeQL &
 
-          # 第三步：编译内核镜像
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
+              # 第一步：生成 .config 文件到 out/ 目录
+              make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out gki_defconfig
 
-          echo "内核编译完成！"
-          echo "ccache状态："
-          ccache -s
-          echo "编译后空间:"
-          df -h
+              # 第二步：修改 out/.config 文件，强制启用LSM和baseband_guard
+              # 注意：这里我们确保 scripts/config 操作的是 out/.config
+              scripts/config --file out/.config -e SECURITY
+              scripts/config --file out/.config -e SECURITYFS
+              scripts/config --file out/.config -e SECURITY_NETWORK
+              scripts/config --file out/.config -e SECURITY_PATH
+              scripts/config --file out/.config -e INTEGRITY
+              scripts/config --file out/.config -e SECURITY_SELINUX
+              scripts/config --file out/.config -e DEFAULT_SECURITY_SELINUX
+              scripts/config --file out/.config --set-str DEFAULT_SECURITY "selinux"
+              scripts/config --file out/.config -e BASEBAND_GUARD
+
+              # 第三步：编译内核镜像
+              make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
+
+              echo "内核编译完成！"
+              echo "ccache状态："
+              ccache -s
+              echo "编译后空间:"
+              df -h
 
       - name: 打印最终生效的内核配置
         run: |
