@@ -438,12 +438,8 @@ jobs:
           cd common
           wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
           patch -p1 -F 3 < config.patch || true
-          wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/0001-add-baseband-guard-driver.patch
-          wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/0002-link-kconfig.patch
-          wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/0003-link-makefile.patch
-          patch -p1 -F 3 < 0001-add-baseband-guard-driver.patch || true
-          patch -p1 -F 3 < 0002-link-kconfig.patch || true
-          patch -p1 -F 3 < 0003-link-makefile.patch || true
+          wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband.patch
+          patch -p1 -F 3 < baseband.patch || true
           echo "Baseband Guard 已成功集成到构建体系中"      
           #禁用 defconfig 检查
           sed -i 's/check_defconfig//' ./common/build.config.gki
