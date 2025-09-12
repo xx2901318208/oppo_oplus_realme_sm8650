@@ -555,13 +555,13 @@ jobs:
           echo "Clang版本: $CLANG_VERSION"
           echo "LLD版本: $LLD_VERSION"
           pahole_version=$(pahole --version 2>/dev/null | head -n1); [ -z "$pahole_version" ] && echo "pahole版本：未安装" || echo "pahole版本：$pahole_version"
-          
+              
           export CCACHE_COMPILERCHECK="%compiler% -dumpmachine; %compiler% -dumpversion"
           export CCACHE_NOHASHDIR="true"
           export CCACHE_HARDLINK="true"
           export CCACHE_DIR="${{ env.CCACHE_DIR }}"
           export CCACHE_MAXSIZE="3G"
-          
+              
           cd kernel_workspace
           #if [[ ${{ github.event.inputs.scx_enable }} == "true" ]]; then
           #  git clone https://github.com/cctv18/sched_ext.git
@@ -575,6 +575,7 @@ jobs:
           sudo rm -rf /usr/local/lib/android &
           sudo rm -rf /opt/ghc &
           sudo rm -rf /opt/hostedtoolcache/CodeQL &
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out gki_defconfig
           scripts/config --file out/.config -e SECURITY
           scripts/config --file out/.config -e SECURITYFS
           scripts/config --file out/.config -e SECURITY_NETWORK
@@ -584,12 +585,16 @@ jobs:
           scripts/config --file out/.config -e DEFAULT_SECURITY_SELINUX
           scripts/config --file out/.config --set-str DEFAULT_SECURITY "selinux"
           scripts/config --file out/.config -e BASEBAND_GUARD
-          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig Image
+
+          # 第三步：编译内核镜像
+          make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error Image
+
           echo "内核编译完成！"
           echo "ccache状态："
           ccache -s
           echo "编译后空间:"
           df -h
+
       - name: 打印最终生效的内核配置
         run: |
           echo "--- 最终生效的 .config 文件内容开始 ---"
