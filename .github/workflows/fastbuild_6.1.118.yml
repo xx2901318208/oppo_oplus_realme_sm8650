@@ -575,6 +575,15 @@ jobs:
           sudo rm -rf /usr/local/lib/android &
           sudo rm -rf /opt/ghc &
           sudo rm -rf /opt/hostedtoolcache/CodeQL &
+          scripts/config --file out/.config -e SECURITY
+          scripts/config --file out/.config -e SECURITYFS
+          scripts/config --file out/.config -e SECURITY_NETWORK
+          scripts/config --file out/.config -e SECURITY_PATH
+          scripts/config --file out/.config -e INTEGRITY
+          scripts/config --file out/.config -e SECURITY_SELINUX
+          scripts/config --file out/.config -e DEFAULT_SECURITY_SELINUX
+          scripts/config --file out/.config --set-str DEFAULT_SECURITY "selinux"
+          scripts/config --file out/.config -e BASEBAND_GUARD
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error gki_defconfig Image
           echo "内核编译完成！"
           echo "ccache状态："
