@@ -360,6 +360,10 @@ jobs:
           cd common
           wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
           patch -p1 -F 3 < config.patch || true
+          wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/0001-add-baseband-guard-to-security-kconfig.patch
+          wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/0002-add-baseband-guard-to-security-makefile.patch
+          patch -p1 -F 3 < 0001-add-baseband-guard-to-security-kconfig.patch || true
+          patch -p1 -F 3 < 0002-add-baseband-guard-to-security-makefile.patch || true
       - name: 启用网络功能增强优化配置
         run: |
           cd kernel_workspace
@@ -546,9 +550,6 @@ jobs:
           sudo rm -rf /opt/ghc &
           sudo rm -rf /opt/hostedtoolcache/CodeQL &
 
-          echo "CONFIG_BASEBAND_GUARD=m" >> ./arch/arm64/configs/gki_defconfig
-          grep "CONFIG_BASEBAND_GUARD" ./arch/arm64/configs/gki_defconfig
-          
           make -j$(nproc --all) LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC="ccache clang" LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS+=-Wno-error V=1 gki_defconfig Image modules
           
           echo "内核编译完成！"
