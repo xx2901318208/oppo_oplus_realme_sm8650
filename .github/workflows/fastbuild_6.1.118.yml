@@ -86,14 +86,6 @@ on:
           - '1'
           - '2'
           - '3'
-      baseband_enable:
-        description: '是否启用baseband防格机)'
-        required: true
-        type: choice
-        default: 'true'
-        options:
-          - 'true'
-          - 'false'
       kernel_suffix:
         description: '内核后缀(留空默认,开头别加连字符,勿加空格等影响指令运行的保留字符)'
         required: false
