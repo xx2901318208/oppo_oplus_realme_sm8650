@@ -22,7 +22,7 @@ Key Features:
 
 This version fixes critical bugs related to partition name detection (using
 file_open hook for basename matching), Kconfig dependencies, and LSM
-initialization, ensuring compatibility with Android GKI kernels.
+initialization, ensuring compatibility with Android GKI kernels (Linux 6.1).
 
 Note: Protection checks the basename of the opened file path (e.g., "modem_a"
 for /dev/block/by-name/modem_a). For best results, access partitions via
@@ -30,7 +30,7 @@ for /dev/block/by-name/modem_a). For best results, access partitions via
 may not trigger protection unless names match. Suitable for A/B partition
 schemes on Realme GT5 Pro.
 
-Signed-off-by: Your Name <your.email@example.com>
+Signed-off-by: Your Name <youremail@example.com>
 ---
  security/Kconfig                     |   1 +
  security/Makefile                    |   1 +
@@ -46,10 +46,10 @@ diff --git a/security/Kconfig b/security/Kconfig
 index 2b1b8a1..3c2d3e4 100644
 --- a/security/Kconfig
 +++ b/security/Kconfig
-@@ -1,3 +1,4 @@
+@@ -2,3 +2,4 @@
  source "security/selinux/Kconfig"
  source "security/smack/Kconfig"
- source "tomoyo/Kconfig"
+ source "security/tomoyo/Kconfig"
 +source "security/baseband_guard/Kconfig"
 diff --git a/security/Makefile b/security/Makefile
 index 1a2b3c4..5d6e7f8 100644
@@ -103,7 +103,7 @@ index 0000000..ab12cd3
 +#include <linux/kobject.h>
 +#include <linux/sysfs.h>
 +#include <linux/mutex.h>
-+#include <linux/namei.h>
++#include <linux/namei.h>  // For d_path if needed, but using d_name
 +
 +#define MAX_PROTECTED_PARTITIONS 64
 +#define MAX_PARTITION_NAME_LEN 32
@@ -144,10 +144,10 @@ index 0000000..ab12cd3
 +
 +	/*
 +	 * Use the basename of the opened file path for user-friendly matching
-+	 * (e.g., "modem_a" for /dev/block/by-name/modem_a). This works well on
-+	 * Android as partitions are commonly accessed via symbolic links in
-+	 * /dev/block/by-name/. Note: Direct access to raw devices (e.g.,
-+	 * /dev/mmcblk0pX) won't match unless the name is added explicitly.
++	 * (e.g., "modem" for /dev/block/by-name/modem). This works well on Android
++	 * as partitions are commonly accessed via symbolic links in /dev/block/by-name/.
++	 * Note: Direct access to raw devices (e.g., /dev/mmcblk0pX) won't match unless
++	 * the name is added explicitly. Suitable for Realme GT5 Pro A/B partitions.
 +	 */
 +	name = file_dentry(file)->d_name.name;
 +
@@ -173,6 +173,8 @@ index 0000000..ab12cd3
 +	}
 +	num_protected_partitions = 0;
 +}
++
++/* --- sysfs implementation --- */
 +
 +static ssize_t protected_list_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 +{
