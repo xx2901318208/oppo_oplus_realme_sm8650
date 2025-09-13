@@ -5,7 +5,7 @@ Subject: [PATCH] security: Add dynamic and user-friendly baseband_guard LSM
 This patch introduces the 'baseband_guard' Linux Security Module (LSM)
 with a fully dynamic configuration interface via sysfs. It is specifically
 tailored for Android kernels, providing a user-friendly experience on devices
-like Realme GT5 Pro (SM8650).
+like Realme GT5 Pro (SM8650, Android 14, GKI 6.1).
 
 Key Features:
 - **User-Friendly Naming**: Protection is based on partition names found
@@ -30,7 +30,7 @@ for /dev/block/by-name/modem_a). For best results, access partitions via
 may not trigger protection unless names match. Suitable for A/B partition
 schemes on Realme GT5 Pro.
 
-Signed-off-by: Your Name <youremail@example.com>
+Signed-off-by: Your Name <your.email@example.com>
 ---
  security/Kconfig                     |   1 +
  security/Makefile                    |   1 +
@@ -46,11 +46,14 @@ diff --git a/security/Kconfig b/security/Kconfig
 index 2b1b8a1..3c2d3e4 100644
 --- a/security/Kconfig
 +++ b/security/Kconfig
-@@ -2,3 +2,4 @@
+@@ -2,6 +2,7 @@
  source "security/selinux/Kconfig"
  source "security/smack/Kconfig"
  source "security/tomoyo/Kconfig"
 +source "security/baseband_guard/Kconfig"
+ source "security/apparmor/Kconfig"
+ source "security/yama/Kconfig"
+
 diff --git a/security/Makefile b/security/Makefile
 index 1a2b3c4..5d6e7f8 100644
 --- a/security/Makefile
@@ -60,6 +63,8 @@ index 1a2b3c4..5d6e7f8 100644
  obj-$(CONFIG_SECURITYFS)		+= securityfs/
  obj-$(CONFIG_SECURITY_SELINUX)		+= selinux/
 +obj-$(CONFIG_BASEBAND_GUARD)		+= baseband_guard/
+ obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/
+
 diff --git a/security/baseband_guard/Kconfig b/security/baseband_guard/Kconfig
 new file mode 100644
 index 0000000..a1b2c3d
@@ -103,7 +108,7 @@ index 0000000..ab12cd3
 +#include <linux/kobject.h>
 +#include <linux/sysfs.h>
 +#include <linux/mutex.h>
-+#include <linux/namei.h>  // For d_path if needed, but using d_name
++#include <linux/namei.h>
 +
 +#define MAX_PROTECTED_PARTITIONS 64
 +#define MAX_PARTITION_NAME_LEN 32
@@ -144,10 +149,10 @@ index 0000000..ab12cd3
 +
 +	/*
 +	 * Use the basename of the opened file path for user-friendly matching
-+	 * (e.g., "modem" for /dev/block/by-name/modem). This works well on Android
-+	 * as partitions are commonly accessed via symbolic links in /dev/block/by-name/.
-+	 * Note: Direct access to raw devices (e.g., /dev/mmcblk0pX) won't match unless
-+	 * the name is added explicitly. Suitable for Realme GT5 Pro A/B partitions.
++	 * (e.g., "modem_a" for /dev/block/by-name/modem_a). This works well on
++	 * Android as partitions are commonly accessed via symbolic links in
++	 * /dev/block/by-name/. Note: Direct access to raw devices (e.g.,
++	 * /dev/mmcblk0pX) won't match unless the name is added explicitly.
 +	 */
 +	name = file_dentry(file)->d_name.name;
 +
@@ -173,8 +178,6 @@ index 0000000..ab12cd3
 +	}
 +	num_protected_partitions = 0;
 +}
-+
-+/* --- sysfs implementation --- */
 +
 +static ssize_t protected_list_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 +{
