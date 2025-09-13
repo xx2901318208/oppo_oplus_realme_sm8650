@@ -1,0 +1,8 @@
+--- a/security/Makefile
++++ b/security/Makefile
+@@ -1,4 +1,5 @@
+ obj-$(CONFIG_SECURITY)			+= security.o
+ obj-$(CONFIG_SECURITYFS)		+= securityfs/
+ obj-$(CONFIG_SECURITY_SELINUX)		+= selinux/
++obj-$(CONFIG_BASEBAND_GUARD)		+= baseband_guard/
+ obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/
