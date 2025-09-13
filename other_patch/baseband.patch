@@ -1,4 +1,4 @@
-From: CoolApk R1263599071 <2901318208@qq.com>
+From: Your Name <your.email@example.com>
 Date: Fri, 12 Sep 2025 14:00:00 +0000
 Subject: [PATCH] security: Add dynamic and user-friendly baseband_guard LSM
 
@@ -8,16 +8,16 @@ tailored for Android kernels, providing a user-friendly experience on devices
 like Realme GT5 Pro (SM8650, Android 14, GKI 6.1).
 
 Key Features:
-- **User-Friendly Naming**: Protection is based on partition names found
+- User-Friendly Naming: Protection is based on partition names found
   in `/dev/block/by-name/` (e.g., "modem_a", "boot_a"). Users can input these
   friendly names directly into the sysfs interface.
-- **Dynamic Configuration**: Exposes sysfs nodes at `/sys/kernel/baseband_guard/`:
+- Dynamic Configuration: Exposes sysfs nodes at `/sys/kernel/baseband_guard/`:
   - `protected_list`: Read/write a comma-separated list of partitions.
   - `allow_in_recovery`: Toggle protection in recovery mode.
-- **Correct Architecture & Initialization**: The module is correctly placed
+- Correct Architecture & Initialization: The module is correctly placed
   in the `security/` subsystem and uses the standard `security_initcall`
   for registration. Kconfig dependencies have been fixed.
-- **Thread-Safe & Robust**: Uses mutexes for safe concurrent access and
+- Thread-Safe & Robust: Uses mutexes for safe concurrent access and
   properly manages memory.
 
 This version fixes critical bugs related to partition name detection (using
@@ -46,7 +46,7 @@ diff --git a/security/Kconfig b/security/Kconfig
 index 2b1b8a1..3c2d3e4 100644
 --- a/security/Kconfig
 +++ b/security/Kconfig
-@@ -250,3 +250,4 @@ source "security/loadpin/Kconfig"
+@@ -250,6 +250,7 @@ source "security/loadpin/Kconfig"
  source "security/safesetid/Kconfig"
  source "security/lockdown/Kconfig"
  source "security/integrity/Kconfig"
