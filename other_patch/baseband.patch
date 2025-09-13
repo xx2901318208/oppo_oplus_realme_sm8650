@@ -1,4 +1,4 @@
-From: CoolApk R1263599071 <2901318208.com>
+From: CoolApk R1263599071 <2901318208@qq.com>
 Date: Fri, 12 Sep 2025 14:00:00 +0000
 Subject: [PATCH] security: Add dynamic and user-friendly baseband_guard LSM
 
@@ -46,13 +46,11 @@ diff --git a/security/Kconfig b/security/Kconfig
 index 2b1b8a1..3c2d3e4 100644
 --- a/security/Kconfig
 +++ b/security/Kconfig
-@@ -2,6 +2,7 @@
- source "security/selinux/Kconfig"
- source "security/smack/Kconfig"
- source "security/tomoyo/Kconfig"
+@@ -250,3 +250,4 @@ source "security/loadpin/Kconfig"
+ source "security/safesetid/Kconfig"
+ source "security/lockdown/Kconfig"
+ source "security/integrity/Kconfig"
 +source "security/baseband_guard/Kconfig"
- source "security/apparmor/Kconfig"
- source "security/yama/Kconfig"
 
 diff --git a/security/Makefile b/security/Makefile
 index 1a2b3c4..5d6e7f8 100644
@@ -81,6 +79,7 @@ index 0000000..a1b2c3d
 +	  Provides write protection for critical partitions using the LSM
 +	  framework, with a dynamic configuration interface via sysfs at
 +	  /sys/kernel/baseband_guard/.
+
 diff --git a/security/baseband_guard/Makefile b/security/baseband_guard/Makefile
 new file mode 100644
 index 0000000..e1f2g3h
@@ -89,6 +88,7 @@ index 0000000..e1f2g3h
 @@ -0,0 +1,2 @@
 +# SPDX-License-Identifier: GPL-2.0
 +obj-$(CONFIG_BASEBAND_GUARD) += baseband_guard.o
+
 diff --git a/security/baseband_guard/baseband_guard.c b/security/baseband_guard/baseband_guard.c
 new file mode 100644
 index 0000000..ab12cd3
