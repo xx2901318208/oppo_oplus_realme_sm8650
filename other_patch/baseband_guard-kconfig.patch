@@ -1,12 +1,19 @@
+diff --git a/security/baseband_guard/Kconfig b/security/baseband_guard/Kconfig
+new file mode 100644
+index 0000000..2222222
 --- /dev/null
 +++ b/security/baseband_guard/Kconfig
-@@ -0,0 +1,10 @@
-+# SPDX-License-Identifier: GPL-2.0
+@@ -0,0 +1,15 @@
 +config BASEBAND_GUARD
-+    bool "Baseband Partition Guard (LSM with sysfs)"
-+    default y
-+    depends on SECURITY
++    bool "Baseband Guard"
++    default n
 +    help
-+      Provides write protection for critical partitions using the LSM
-+      framework, with a dynamic configuration interface via sysfs at
-+      /sys/kernel/baseband_guard/
++      This LSM protects baseband partitions from write access.
++
++if BASEBAND_GUARD
++
++config BASEBAND_GUARD_SYSFS
++    bool "Sysfs config for baseband_guard"
++    default y
++
++endif  # BASEBAND_GUARD
