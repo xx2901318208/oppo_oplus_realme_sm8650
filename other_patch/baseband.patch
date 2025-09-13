@@ -1,10 +1,15 @@
 From: Your Name <your.email@example.com>
-Date: Sat, 13 Sep 2025 10:00:00 +0800
+Date: Sat, 13 Sep 2025 11:00:00 +0800
 Subject: [PATCH] security: Add baseband_guard LSM for partition protection
 
 This patch introduces the 'baseband_guard' Linux Security Module (LSM)
 with a dynamic configuration interface via sysfs, tailored for Android
 GKI kernels (Linux 6.1) on Realme GT5 Pro (SM8650, Android 14).
+
+Key Features:
+- Protects critical partitions (e.g., modem_a, boot_a) using LSM file_open hook.
+- Dynamic sysfs interface at /sys/kernel/baseband_guard/ for partition list and recovery mode bypass.
+- Compatible with Android 14 A/B partition schemes and SukiSU-Ultra (KSUVER 13343).
 
 Signed-off-by: Your Name <your.email@example.com>
 ---
