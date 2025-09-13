@@ -499,23 +499,7 @@ jobs:
             echo "CONFIG_MQ_IOSCHED_SSG=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_MQ_IOSCHED_SSG_CGROUP=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
-      - name: 启用baseband 防格机
-        run: |
-          if [[ "${{ github.event.inputs.baseband_enable }}" == "true" ]]; then
-            echo "正在启用baseband"
-            cd kernel_workspace/common
-            wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband.patch
-            dos2unix baseband.patch
-            patch -p1 -F 3 < baseband.patch
-            echo "验证baseband_guard文件："
-            ls -l security/baseband_guard/
-            if [[ ! -f security/baseband_guard/Kconfig ]]; then
-              echo "错误：security/baseband_guard/Kconfig 未创建"
-              exit 1
-            fi
-            echo "CONFIG_BASEBAND_GUARD=y" >> arch/arm64/configs/gki_defconfig
-            echo "Baseband Guard 已成功集成到构建体系中"
-          fi
+
       - name: 启用Re-Kernel支持
         run: |
           if [[ "${{ github.event.inputs.ssg_rekernel_enable }}" == "2" || "${{ github.event.inputs.ssg_rekernel_enable }}" == "3" ]]; then
@@ -530,7 +514,23 @@ jobs:
             cd kernel_workspace
             echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
-
+      - name: 启用baseband 防格机
+        run: |
+          if [[ "${{ github.event.inputs.baseband_enable }}" == "true" ]]; then
+            echo "正在启用baseband"
+            cd kernel_workspace/common
+            wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband.patch
+            dos2unix baseband.patch
+            patch -p1 -F 3 < baseband.patch
+            echo "验证baseband_guard文件："
+            ls -l security/baseband_guard/
+              if [[ ! -f security/baseband_guard/Kconfig ]]; then
+              echo "错误：security/baseband_guard/Kconfig 未创建"
+              exit 1
+              fi
+            echo "CONFIG_BASEBAND_GUARD=y" >> arch/arm64/configs/gki_defconfig
+            echo "Baseband Guard 已成功集成到构建体系中"
+          fi
       - name: 添加制作名称
         run: |
           cd kernel_workspace
