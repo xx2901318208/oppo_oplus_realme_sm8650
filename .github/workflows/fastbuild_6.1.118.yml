@@ -460,8 +460,8 @@ jobs:
             sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' ./common/arch/arm64/configs/gki_defconfig
           fi
           cd common
-          wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
-          patch -p1 -F 3 < config.patch || true
+          #wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
+          #patch -p1 -F 3 < config.patch || true
           wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband.patch
           patch -p1 -F 3 < baseband.patch || true
       - name: 添加 BBR 等一系列拥塞控制算法
