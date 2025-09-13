@@ -313,24 +313,274 @@ jobs:
             cp ../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4kd.patch ./
             patch -p1 -F 3 < lz4kd.patch || true
           fi
-      - name: 应用 baseband_guard 补丁
+      - name: Apply All Patches Atomically and In-Place
         run: |
+          echo "--- Applying all patches using individual Here Documents for maximum reliability ---"
           cd kernel_workspace
-          echo "正在应用 baseband_guard 补丁..."
-          echo "CONFIG_BASEBAND_GUARD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          cd common
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/security-kconfig.patch
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband_guard-kconfig.patch      
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/security-makefile.patch
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband-guard-makefile.patch
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband_guard_c.patch
-          file baseband_guard_c.patch         
-          dos2unix baseband_guard_c.patch
-          git apply --verbose security-kconfig.patch
-          git apply --verbose baseband_guard-kconfig.patch
-          git apply --verbose security-makefile.patch
-          git apply --verbose baseband-guard-makefile.patch
-          git apply --verbose baseband_guard_c.patch
+
+          # 创建目标目录
+          mkdir -p security/baseband_guard
+
+          # --- 补丁 1: security-kconfig.patch ---
+          echo "--> Applying patch for security/Kconfig..."
+          cat << 'EOF' | git apply --verbose -
+          --- a/security/Kconfig
+          +++ b/security/Kconfig
+          @@ -251,5 +251,6 @@
+           source "security/lockdown/Kconfig"
+           source "security/integrity/Kconfig"
+           
+          +source "security/baseband_guard/Kconfig"
+          +
+           endmenu
+          EOF
+          if [ $? -ne 0 ]; then echo "FATAL: Failed to apply security-kconfig.patch" >&2; exit 1; fi
+
+          # --- 补丁 2: baseband_guard-kconfig.patch ---
+          echo "--> Applying patch for security/baseband_guard/Kconfig..."
+          cat << 'EOF' | git apply --verbose -
+          --- /dev/null
+          +++ b/security/baseband_guard/Kconfig
+          @@ -0,0 +1,10 @@
+          +# SPDX-License-Identifier: GPL-2.0
+          +config BASEBAND_GUARD
+          +    bool "Baseband Partition Guard (LSM with sysfs)"
+          +    default y
+          +    depends on SECURITY
+          +    help
+          +      Provides write protection for critical partitions using the LSM
+          +      framework, with a dynamic configuration interface via sysfs at
+          +      /sys/kernel/baseband_guard/
+          EOF
+          if [ $? -ne 0 ]; then echo "FATAL: Failed to apply baseband_guard-kconfig.patch" >&2; exit 1; fi
+
+          # --- 补丁 3: security-makefile.patch ---
+          echo "--> Applying patch for security/Makefile..."
+          cat << 'EOF' | git apply --verbose -
+          --- a/security/Makefile
+          +++ b/security/Makefile
+          @@ -2,4 +2,5 @@
+           obj-$(CONFIG_SECURITY)			+= security.o
+           obj-$(CONFIG_SECURITYFS)		+= securityfs/
+           obj-$(CONFIG_SECURITY_SELINUX)		+= selinux/
+          +obj-$(CONFIG_BASEBAND_GUARD)		+= baseband_guard/
+           obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/
+          EOF
+          if [ $? -ne 0 ]; then echo "FATAL: Failed to apply security-makefile.patch" >&2; exit 1; fi
+
+          # --- 补丁 4: baseband-guard-makefile.patch ---
+          echo "--> Applying patch for security/baseband_guard/Makefile..."
+          cat << 'EOF' | git apply --verbose -
+          --- /dev/null
+          +++ b/security/baseband_guard/Makefile
+          @@ -0,0 +1,2 @@
+          +# SPDX-License-Identifier: GPL-2.0
+          +obj-$(CONFIG_BASEBAND_GUARD) += baseband_guard.o
+          EOF
+          if [ $? -ne 0 ]; then echo "FATAL: Failed to apply baseband-guard-makefile.patch" >&2; exit 1; fi
+
+          # --- 补丁 5: baseband_guard_c.patch ---
+          echo "--> Applying patch for security/baseband_guard/baseband_guard.c..."
+          cat << 'EOF' | git apply --verbose -
+          --- /dev/null
+          +++ b/security/baseband_guard/baseband_guard.c
+          @@ -0,0 +1,215 @@
+          +// SPDX-License-Identifier: GPL-2.0
+          +
+          +#include <linux/kernel.h>
+          +#include <linux/init.h>
+          +#include <linux/security.h>
+          +#include <linux/lsm_hooks.h>
+          +#include <linux/fs.h>
+          +#include <linux/string.h>
+          +#include <linux/blkdev.h>
+          +#include <linux/slab.h>
+          +#include <linux/kobject.h>
+          +#include <linux/sysfs.h>
+          +#include <linux/mutex.h>
+          +#include <linux/namei.h>
+          +
+          +#define MAX_PROTECTED_PARTITIONS 64
+          +#define MAX_PARTITION_NAME_LEN 32
+          +
+          +static char *protected_partitions[MAX_PROTECTED_PARTITIONS];
+          +static int num_protected_partitions;
+          +static DEFINE_MUTEX(partition_list_lock);
+          +
+          +static bool recovery_bypass = true;
+          +extern char *saved_command_line;
+          +
+          +static bool is_recovery_mode(void)
+          +{
+          +	if (!recovery_bypass)
+          +		return false;
+          +
+          +	if (saved_command_line &&
+          +		(strstr(saved_command_line, "androidboot.mode=recovery") || strstr(saved_command_line, "recovery=true"))) {
+          +		return true;
+          +	}
+          +	return false;
+          +}
+          +
+          +static int guard_file_open(struct file *file)
+          +{
+          +	const char *name;
+          +	int i;
+          +
+          +	if (!(file->f_mode & FMODE_WRITE))
+          +		return 0;
+          +
+          +	struct inode *inode = file_inode(file);
+          +	if (!S_ISBLK(inode->i_mode))
+          +		return 0;
+          +
+          +	if (is_recovery_mode())
+          +		return 0;
+          +
+          +	name = file_dentry(file)->d_name.name;
+          +
+          +	mutex_lock(&partition_list_lock);
+          +	for (i = 0; i < num_protected_partitions; i++) {
+          +		if (strcmp(name, protected_partitions[i]) == 0) {
+          +			mutex_unlock(&partition_list_lock);
+          +			pr_err("baseband_guard: DENIED write to protected partition '%s'\n", name);
+          +			return -EPERM;
+          +		}
+          +	}
+          +	mutex_unlock(&partition_list_lock);
+          +
+          +	return 0;
+          +}
+          +
+          +static void cleanup_partition_list(void)
+          +{
+          +	int i;
+          +	for (i = 0; i < num_protected_partitions; i++) {
+          +		kfree(protected_partitions[i]);
+          +		protected_partitions[i] = NULL;
+          +	}
+          +	num_protected_partitions = 0;
+          +}
+          +
+          +static ssize_t protected_list_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+          +{
+          +	int i;
+          +	size_t len = 0;
+          +
+          +	mutex_lock(&partition_list_lock);
+          +	for (i = 0; i < num_protected_partitions; i++)
+          +		len += scnprintf(buf + len, PAGE_SIZE - len, "%s,", protected_partitions[i]);
+          +	mutex_unlock(&partition_list_lock);
+          +
+          +	if (len > 0)
+          +		buf[len - 1] = '\n';
+          +	else
+          +		len = scnprintf(buf, PAGE_SIZE, "\n");
+          +
+          +	return len;
+          +}
+          +
+          +static ssize_t protected_list_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+          +{
+          +	char *new_partitions[MAX_PROTECTED_PARTITIONS] = {0};
+          +	int num_new = 0;
+          +	char *buffer, *p, *substr;
+          +	int i;
+          +
+          +	buffer = kstrndup(buf, count, GFP_KERNEL);
+          +	if (!buffer) return -ENOMEM;
+          +
+          +	p = buffer;
+          +	while ((substr = strsep(&p, ",\n\r\t ")) != NULL) {
+          +		if (*substr == '\0') continue;
+          +		if (num_new >= MAX_PROTECTED_PARTITIONS) {
+          +			pr_warn("baseband_guard: Too many partitions, truncating list.\n");
+          +			break;
+          +		}
+          +		new_partitions[num_new] = kstrndup(substr, MAX_PARTITION_NAME_LEN, GFP_KERNEL);
+          +		if (!new_partitions[num_new]) {
+          +			for (i = 0; i < num_new; i++) kfree(new_partitions[i]);
+          +			kfree(buffer);
+          +			return -ENOMEM;
+          +		}
+          +		num_new++;
+          +	}
+          +
+          +	mutex_lock(&partition_list_lock);
+          +	cleanup_partition_list();
+          +	for (i = 0; i < num_new; i++)
+          +		protected_partitions[i] = new_partitions[i];
+          +	num_protected_partitions = num_new;
+          +	mutex_unlock(&partition_list_lock);
+          +
+          +	kfree(buffer);
+          +	pr_info("baseband_guard: Updated protected list, now protecting %d partitions.\n", num_new);
+          +
+          +	return count;
+          +}
+          +
+          +static ssize_t allow_in_recovery_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+          +{
+          +	return scnprintf(buf, PAGE_SIZE, "%d\n", recovery_bypass);
+          +}
+          +
+          +static ssize_t allow_in_recovery_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+          +{
+          +	bool new_val;
+          +	if (kstrtobool(buf, &new_val))
+          +		return -EINVAL;
+          +	recovery_bypass = new_val;
+          +	pr_info("baseband_guard: Recovery mode bypass set to %d\n", recovery_bypass);
+          +	return count;
+          +}
+          +
+          +static struct kobj_attribute protected_list_attr = __ATTR(protected_list, 0664, protected_list_show, protected_list_store);
+          +static struct kobj_attribute recovery_bypass_attr = __ATTR(allow_in_recovery, 0664, allow_in_recovery_show, allow_in_recovery_store);
+          +
+          +static struct attribute *attrs[] = {
+          +	&protected_list_attr.attr,
+          +	&recovery_bypass_attr.attr,
+          +	NULL,
+          +};
+          +
+          +static struct attribute_group attr_group = {
+          +	.attrs = attrs,
+          +};
+          +
+          +static struct kobject *baseband_guard_kobj;
+          +
+          +static struct security_hook_list baseband_guard_hooks[] __lsm_ro_after_init = {
+          +	LSM_HOOK_INIT(file_open, guard_file_open),
+          +};
+          +
+          +static int __init baseband_guard_init(void)
+          +{
+          +	int retval;
+          +
+          +	pr_info("baseband_guard: Registering as a built-in LSM with dynamic sysfs config.\n");
+          +	security_add_hooks(baseband_guard_hooks, ARRAY_SIZE(baseband_guard_hooks), "baseband_guard");
+          +
+          +	baseband_guard_kobj = kobject_create_and_add("baseband_guard", kernel_kobj);
+          +	if (!baseband_guard_kobj) {
+          +		pr_err("baseband_guard: Failed to create kobject\n");
+          +		return -ENOMEM;
+          +	}
+          +
+          +	retval = sysfs_create_group(baseband_guard_kobj, &attr_group);
+          +	if (retval) {
+          +		kobject_put(baseband_guard_kobj);
+          +		pr_err("baseband_guard: Failed to create sysfs group\n");
+          +	}
+          +
+          +	return retval;
+          +}
+          +
+          +security_initcall(baseband_guard_init);
+          EOF
+          if [ $? -ne 0 ]; then echo "FATAL: Failed to apply baseband_guard_c.patch" >&2; exit 1; fi
+
+          echo "--- All patches applied successfully! ---"
+
       - name: 添加 KSU & SUSFS 配置项
         run: |
           cd kernel_workspace
