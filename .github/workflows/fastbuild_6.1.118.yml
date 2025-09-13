@@ -313,7 +313,17 @@ jobs:
             cp ../SukiSU_patch/other/zram/zram_patch/${{ env.KERNEL_VERSION }}/lz4kd.patch ./
             patch -p1 -F 3 < lz4kd.patch || true
           fi
-          
+      - name: 应用 baseband_guard 补丁
+        run: |
+          echo "正在应用 baseband_guard 补丁..."
+          cd kernel_workspace/common
+          wget https://github.com/xx2901318208/android_kernel_oppo_sm8650/raw/main/kconfig.patch
+          wget https://github.com/xx2901318208/android_kernel_oppo_sm8650/raw/main/makefile.patch
+          wget https://github.com/xx2901318208/android_kernel_oppo_sm8650/raw/main/baseband_guard_c.patch
+          patch -p1 < kconfig.patch
+          patch -p1 < makefile.patch
+          patch -p1 < baseband_guard_c.patch
+          echo "CONFIG_BASEBAND_GUARD=y" >> ./arch/arm64/configs/gki_defconfig
       - name: 添加 KSU & SUSFS 配置项
         run: |
           cd kernel_workspace
@@ -405,8 +415,6 @@ jobs:
             echo "CONFIG_TMPFS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
             # Add rcu config setting
             echo "CONFIG_RCU_TRACE=n" >> ./common/arch/arm64/configs/gki_defconfig
-            # BASEBAND_GUARD
-            echo "CONFIG_BASEBAND_GUARD=y" >> ./common/arch/arm64/configs/gki_defconfig
             # 120Hz动态刷新率配置       
             echo "CONFIG_DRM_MSM_DSI_120HZ=y" >> ./common/arch/arm64/configs/gki_defconfig
             echo "CONFIG_QCOM_KGSL_120HZ_GPU_FREQ=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -462,10 +470,8 @@ jobs:
             sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' ./common/arch/arm64/configs/gki_defconfig
           fi
           cd common
-          #wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
-          #patch -p1 -F 3 < config.patch || true
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband.patch
-          git apply baseband.patch
+          wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
+          patch -p1 -F 3 < config.patch || true
       - name: 添加 BBR 等一系列拥塞控制算法
         run: |
           if [[ "${{ github.event.inputs.bbr_enable }}" == "true" || "${{ github.event.inputs.bbr_enable }}" == "default" ]]; then
