@@ -514,23 +514,36 @@ jobs:
             cd kernel_workspace
             echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
-      - name: 启用baseband 防格机
+      - name: 启用 Baseband Guard (最终验证版)
         run: |
           if [[ "${{ github.event.inputs.baseband_enable }}" == "true" ]]; then
-            echo "正在启用baseband"
+            echo "正在启用 Baseband Guard..."
             cd kernel_workspace/common
+
+            echo "  -> 正在下载并预处理补丁..."
             wget https://raw.githubusercontent.com/xx2901318208/oppo_oplus_realme_sm8650/main/other_patch/baseband.patch
             dos2unix baseband.patch
+
+            echo "  -> 正在应用补丁..."
+            # 注意：这里不再使用 '|| true'，让 patch 命令在失败时能立刻中止构建
             patch -p1 -F 3 < baseband.patch
-            echo "验证baseband_guard文件："
-            ls -l security/baseband_guard/
-              if [[ ! -f security/baseband_guard/Kconfig ]]; then
-              echo "错误：security/baseband_guard/Kconfig 未创建"
+
+            echo "  -> 正在验证补丁应用结果..."
+            # 验证关键文件是否已创建
+            if [[ ! -f "security/baseband_guard/Kconfig" || ! -f "security/baseband_guard/Makefile" || ! -f "security/baseband_guard/baseband_guard.c" ]]; then
+              echo "错误：Baseband Guard 的源文件未被成功创建！请检查补丁内容和应用日志。"
+              # 列出 security 目录内容以供调试
+              ls -l security/
               exit 1
-              fi
+            fi
+            echo "  -> 文件验证通过。"
+
+            echo "  -> 正在向 defconfig 添加配置..."
             echo "CONFIG_BASEBAND_GUARD=y" >> arch/arm64/configs/gki_defconfig
-            echo "Baseband Guard 已成功集成到构建体系中"
+            
+            echo "Baseband Guard 已成功集成到构建体系中！"
           fi
+
       - name: 添加制作名称
         run: |
           cd kernel_workspace
