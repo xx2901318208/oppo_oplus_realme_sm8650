@@ -1,1 +1,7 @@
-1
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -250,6 +250,7 @@
+ source "security/safesetid/Kconfig"
+ source "security/lockdown/Kconfig"
+ source "security/integrity/Kconfig"
++source "security/baseband_guard/Kconfig"
