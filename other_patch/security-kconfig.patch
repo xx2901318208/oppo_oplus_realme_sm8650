@@ -1,7 +1,12 @@
+diff --git a/security/Kconfig b/security/Kconfig
+index 0000000..1111111 100644
 --- a/security/Kconfig
 +++ b/security/Kconfig
-@@ -250,6 +250,7 @@
- source "security/safesetid/Kconfig"
- source "security/lockdown/Kconfig"
- source "security/integrity/Kconfig"
-+source "security/baseband_guard/Kconfig"
+@@ -800,3 +800,10 @@ endmenu  # Security options endmenu
++config BASEBAND_GUARD
++    bool "Baseband Guard LSM"
++    default n
++    depends on SECURITY
++    help
++      Enables protection for baseband partitions via LSM hooks.
++      Protects against unauthorized writes to modem partitions.
