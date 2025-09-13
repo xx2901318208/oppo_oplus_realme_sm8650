@@ -1,9 +1,0 @@
---- a/security/Makefile
-+++ b/security/Makefile
-@@ -10,3 +10,5 @@
- obj-$(CONFIG_SECURITY_PATH)		+= path.o
- obj-$(CONFIG_SECURITY_YAMA)		+= yama/
- obj-$(CONFIG_SECURITY_SAFESETID)	+= safesetid/
- obj-$(CONFIG_BPF_LSM)			+= bpf_lsm.o
-+
-+obj-$(CONFIG_BASEBAND_GUARD)		+= ../drivers/baseband_guard/
