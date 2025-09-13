@@ -324,11 +324,11 @@ jobs:
           wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/security-makefile.patch
           wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband-guard-makefile.patch
           wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband_guard_c.patch
-          git apply < security-kconfig.patch
-          git apply < baseband_guard-kconfig.patch
-          git apply < security-makefile.patch
-          git apply < baseband-guard-makefile.patch
-          git apply < baseband_guard_c.patch
+          git apply --verbose security-kconfig.patch
+          git apply --verbose baseband_guard-kconfig.patch
+          git apply --verbose security-makefile.patch
+          git apply --verbose baseband-guard-makefile.patch
+          git apply --verbose baseband_guard_c.patch
       - name: 添加 KSU & SUSFS 配置项
         run: |
           cd kernel_workspace
