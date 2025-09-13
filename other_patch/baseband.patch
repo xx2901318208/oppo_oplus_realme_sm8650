@@ -1,34 +1,10 @@
 From: Your Name <your.email@example.com>
-Date: Fri, 12 Sep 2025 14:00:00 +0000
-Subject: [PATCH] security: Add dynamic and user-friendly baseband_guard LSM
+Date: Sat, 13 Sep 2025 10:00:00 +0800
+Subject: [PATCH] security: Add baseband_guard LSM for partition protection
 
 This patch introduces the 'baseband_guard' Linux Security Module (LSM)
-with a fully dynamic configuration interface via sysfs. It is specifically
-tailored for Android kernels, providing a user-friendly experience on devices
-like Realme GT5 Pro (SM8650, Android 14, GKI 6.1).
-
-Key Features:
-- User-Friendly Naming: Protection is based on partition names found
-  in `/dev/block/by-name/` (e.g., "modem_a", "boot_a"). Users can input these
-  friendly names directly into the sysfs interface.
-- Dynamic Configuration: Exposes sysfs nodes at `/sys/kernel/baseband_guard/`:
-  - `protected_list`: Read/write a comma-separated list of partitions.
-  - `allow_in_recovery`: Toggle protection in recovery mode.
-- Correct Architecture & Initialization: The module is correctly placed
-  in the `security/` subsystem and uses the standard `security_initcall`
-  for registration. Kconfig dependencies have been fixed.
-- Thread-Safe & Robust: Uses mutexes for safe concurrent access and
-  properly manages memory.
-
-This version fixes critical bugs related to partition name detection (using
-file_open hook for basename matching), Kconfig dependencies, and LSM
-initialization, ensuring compatibility with Android GKI kernels (Linux 6.1).
-
-Note: Protection checks the basename of the opened file path (e.g., "modem_a"
-for /dev/block/by-name/modem_a). For best results, access partitions via
-/dev/block/by-name/. Direct access to raw devices (e.g., /dev/mmcblk0pX)
-may not trigger protection unless names match. Suitable for A/B partition
-schemes on Realme GT5 Pro.
+with a dynamic configuration interface via sysfs, tailored for Android
+GKI kernels (Linux 6.1) on Realme GT5 Pro (SM8650, Android 14).
 
 Signed-off-by: Your Name <your.email@example.com>
 ---
