@@ -317,9 +317,9 @@ jobs:
         run: |
           echo "正在应用 baseband_guard 补丁..."
           cd kernel_workspace/common
-          wget https://github.com/xx2901318208/android_kernel_oppo_sm8650/raw/main/kconfig.patch
-          wget https://github.com/xx2901318208/android_kernel_oppo_sm8650/raw/main/makefile.patch
-          wget https://github.com/xx2901318208/android_kernel_oppo_sm8650/raw/main/baseband_guard_c.patch
+          wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/kconfig.patch
+          wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/makefile.patch
+          wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard_c.patch
           patch -p1 < kconfig.patch
           patch -p1 < makefile.patch
           patch -p1 < baseband_guard_c.patch
