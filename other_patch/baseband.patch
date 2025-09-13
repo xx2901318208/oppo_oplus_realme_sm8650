@@ -32,19 +32,18 @@ index 2b1b8a1..3c2d3e4 100644
  source "security/lockdown/Kconfig"
  source "security/integrity/Kconfig"
 +source "security/baseband_guard/Kconfig"
- 
+
 diff --git a/security/Makefile b/security/Makefile
-index 5d6e7f8..1a2b3c4 100644
+index 1a2b3c4..5d6e7f8 100644
 --- a/security/Makefile
 +++ b/security/Makefile
-@@ -1,5 +1,6 @@
+@@ -1,4 +1,5 @@
  obj-$(CONFIG_SECURITY)			+= security.o
  obj-$(CONFIG_SECURITYFS)		+= securityfs/
  obj-$(CONFIG_SECURITY_SELINUX)		+= selinux/
 +obj-$(CONFIG_BASEBAND_GUARD)		+= baseband_guard/
  obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/
- obj-$(CONFIG_SECURITY_TOMOYO)		+= tomoyo/
- 
+
 diff --git a/security/baseband_guard/Kconfig b/security/baseband_guard/Kconfig
 new file mode 100644
 index 0000000..a1b2c3d
@@ -128,6 +127,13 @@ static int guard_file_open(struct file *file)
 	if (is_recovery_mode())
 		return 0;
 
+	/*
+	 * Use the basename of the opened file path for user-friendly matching
+	 * (e.g., "modem_a" for /dev/block/by-name/modem_a). This works well on
+	 * Android as partitions are commonly accessed via symbolic links in
+	 * /dev/block/by-name/. Note: Direct access to raw devices (e.g.,
+	 * /dev/mmcblk0pX) won't match unless the name is added explicitly.
+	 */
 	name = file_dentry(file)->d_name.name;
 
 	mutex_lock(&partition_list_lock);
