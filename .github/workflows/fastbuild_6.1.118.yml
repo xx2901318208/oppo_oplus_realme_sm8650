@@ -319,13 +319,15 @@ jobs:
           echo "正在应用 baseband_guard 补丁..."
           echo "CONFIG_BASEBAND_GUARD=y" >> ./common/arch/arm64/configs/gki_defconfig
           cd common
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband_guard-kconfig.patch
           wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/security-kconfig.patch
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/makefile.patch
+          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband_guard-kconfig.patch      
+          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/security-makefile.patch
+          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband-guard-makefile.patch
           wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband_guard_c.patch
-          patch -p1 -F 3 < baseband_guard-kconfig.patch
           patch -p1 -F 3 < security-kconfig.patch
-          patch -p1 -F 3 < makefile.patch
+          patch -p1 -F 3 < baseband_guard-kconfig.patch
+          patch -p1 -F 3 < security-makefile.patch
+          patch -p1 -F 3 < baseband-guard-makefile.patch
           patch -p1 -F 3 < baseband_guard_c.patch
       - name: 添加 KSU & SUSFS 配置项
         run: |
