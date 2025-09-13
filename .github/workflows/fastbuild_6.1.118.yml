@@ -315,15 +315,16 @@ jobs:
           fi
       - name: 应用 baseband_guard 补丁
         run: |
+          cd kernel_workspace
           echo "正在应用 baseband_guard 补丁..."
-          cd kernel_workspace/common
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/kconfig.patch
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/makefile.patch
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/baseband_guard_c.patch
+          echo "CONFIG_BASEBAND_GUARD=y" >> ./common/arch/arm64/configs/gki_defconfig
+          cd common
+          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/kconfig.patch
+          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/makefile.patch
+          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband_guard_c.patch
           patch -p1 < kconfig.patch
           patch -p1 < makefile.patch
           patch -p1 < baseband_guard_c.patch
-          echo "CONFIG_BASEBAND_GUARD=y" >> ./arch/arm64/configs/gki_defconfig
       - name: 添加 KSU & SUSFS 配置项
         run: |
           cd kernel_workspace
