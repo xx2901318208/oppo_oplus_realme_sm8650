@@ -1,7 +1,8 @@
-diff --git a/security/Makefile b/security/Makefile
-index 0000000..3333333 100644
 --- a/security/Makefile
 +++ b/security/Makefile
-@@ -50,1 +50,2 @@ obj-$(CONFIG_SECURITY_YYY) += yyy/
-+obj-$(CONFIG_BASEBAND_GUARD) += baseband_guard/
-obj-$(CONFIG_SECURITY_SELINUX) += selinux/
+@@ -2,4 +2,5 @@
+ obj-$(CONFIG_SECURITY)			+= security.o
+ obj-$(CONFIG_SECURITYFS)		+= securityfs/
+ obj-$(CONFIG_SECURITY_SELINUX)		+= selinux/
++obj-$(CONFIG_BASEBAND_GUARD)		+= baseband_guard/
+ obj-$(CONFIG_SECURITY_APPARMOR)		+= apparmor/
