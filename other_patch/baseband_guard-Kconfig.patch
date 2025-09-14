@@ -1,0 +1,12 @@
+--- /dev/null
++++ b/security/baseband_guard/Kconfig
+@@ -0,0 +1,12 @@
++# SPDX-License-Identifier: GPL-2.0
++config BASEBAND_GUARD
++    bool "Baseband Guard (LSM + SELinux + KernelSU WebUI)"
++    default y
++    depends on SECURITY && SOC_QCOM && SECURITY_SELINUX
++    help
++      Protects partitions (e.g., modem) from writes using LSM and SELinux.
++      KernelSU WebUI for dynamic control. Persistent config via module storage.
++      Optimized for SM8650 to prevent baseband deletion.
