@@ -1,7 +1,0 @@
-diff --git a/security/baseband_guard/Makefile b/security/baseband_guard/Makefile
-new file mode 100644
-index 0000000..4444444
---- /dev/null
-+++ b/security/baseband_guard/Makefile
-@@ -0,0 +1,2 @@
-+obj-$(CONFIG_BASEBAND_GUARD) += baseband_guard.o
