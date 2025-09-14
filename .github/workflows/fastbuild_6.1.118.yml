@@ -162,7 +162,11 @@ jobs:
         run: |
           cd kernel_workspace
           echo "正在克隆源码仓库..."
-          git clone --depth=1 -b oneplus/sm8650_v_15.0.0_oneplus12_6.1.118 https://github.com/xx2901318208/android_kernel_common_oneplus_sm8650.git common &
+          echo "正在克隆源码仓库..."
+          aria2c -s16 -x16 -k1M https://github.com/cctv18/android_kernel_common_oneplus_sm8650/archive/refs/heads/oneplus/sm8650_v_15.0.0_oneplus12_6.1.118.zip -o common.zip && 
+          unzip -q common.zip && 
+          mv "android_kernel_common_oneplus_sm8650-oneplus-sm8650_v_15.0.0_oneplus12_6.1.118" common &&
+          rm -rf common.zip &
           
           echo "正在克隆llvm-Clang20工具链..." &&
           mkdir -p clang20 &&
@@ -268,8 +272,8 @@ jobs:
             cp ./SukiSU_patch/69_hide_stuff.patch ./common/
             cd ./common
             patch -p1 < 50_add_susfs_in_gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
-            patch -p1 < syscall_hooks.patch || true
-            patch -p1 < 69_hide_stuff.patch || true
+            patch -p1 -N -F 3 < scope_min_manual_hooks_v1.4.patch || true
+            patch -p1 -N -F 3 < 69_hide_stuff.patch || true
           else
             echo "正在添加KernelSU Next补丁..."
             git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.ANDROID_VERSION }}-${{ env.KERNEL_VERSION }}
