@@ -1,0 +1,9 @@
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -251,5 +251,6 @@
+ source "security/lockdown/Kconfig"
+ source "security/integrity/Kconfig"
+ 
++source "security/baseband_guard/Kconfig"
++
+ endmenu
