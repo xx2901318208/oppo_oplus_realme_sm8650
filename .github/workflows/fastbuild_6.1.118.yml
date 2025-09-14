@@ -508,22 +508,7 @@ jobs:
             cd kernel_workspace
             echo "CONFIG_SCHED_EEVDF=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
-      - name: 应用 baseband_guard 补丁
-        run: |
-          cd kernel_workspace
-          echo "正在应用 baseband_guard 补丁..."
-          echo "CONFIG_BASEBAND_GUARD=y" >> ./common/arch/arm64/configs/gki_defconfig
-          cd common
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/security-Kconfig.patch
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/security-Makefile.patch      
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband_guard-Kconfig.patch
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband_guard-Makefile.patch
-          wget https://github.com/xx2901318208/oppo_oplus_realme_sm8650/raw/main/other_patch/baseband_guard.c.patch
-          patch -p1 -F 3 < security-Kconfig.patch || true
-          patch -p1 -F 3 < security-Makefile.patch || true
-          patch -p1 -F 3 < baseband_guard-Kconfig.patch || true
-          patch -p1 -F 3 < baseband_guard-Makefile.patch || true
-          patch -p1 -F 3 < baseband_guard.c.patch || true
+
       - name: 添加制作名称
         run: |
           cd kernel_workspace
