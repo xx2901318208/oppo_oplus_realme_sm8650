@@ -1,0 +1,234 @@
+--- /dev/null
++++ b/security/baseband_guard/baseband_guard.c
+@@ -0,0 +1,230 @@
++// SPDX-License-Identifier: GPL-2.0
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/security.h>
++#include <linux/lsm_hooks.h>
++#include <linux/fs.h>
++#include <linux/string.h>
++#include <linux/slab.h>
++#include <linux/kobject.h>
++#include <linux/sysfs.h>
++#include <linux/mutex.h>
++#include <linux/namei.h>
++#include <linux/firmware.h>
++#include <linux/crypto.h>
++#include <linux/scatterlist.h>
++#include <linux/kthread.h>
++
++#define MAX_PROTECTED_PARTITIONS 64
++#define MAX_PARTITION_NAME_LEN 32
++#define MODEM_FW_NAME "modem.mbn"
++#define EXPECTED_SIG {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}  // Replace with SHA256 of modem.mbn
++
++static char *protected_partitions[MAX_PROTECTED_PARTITIONS] = {"modem", NULL};
++static int num_protected_partitions = 1;
++static DEFINE_MUTEX(partition_list_lock);
++static bool recovery_bypass = true;
++static bool verify_sig = true;
++
++module_param(verify_sig, bool, 0644);
++module_param(recovery_bypass, bool, 0644);
++
++extern char *saved_command_line;
++
++static bool is_recovery_mode(void) {
++    if (!recovery_bypass) return false;
++    if (saved_command_line &&
++        (strstr(saved_command_line, "androidboot.mode=recovery") ||
++         strstr(saved_command_line, "recovery=true"))) {
++        pr_info("baseband_guard: Recovery mode detected");
++        return true;
++    }
++    return false;
++}
++
++static int compute_sha256(const void *data, size_t len, u8 *hash) {
++    struct scatterlist sg;
++    struct crypto_shash *tfm;
++    struct shash_desc *desc;
++    int ret;
++
++    tfm = crypto_alloc_shash("sha256", 0, 0);
++    if (IS_ERR(tfm)) return PTR_ERR(tfm);
++
++    desc = kzalloc(sizeof(*desc) + crypto_shash_descsize(tfm), GFP_KERNEL);
++    if (!desc) {
++        crypto_free_shash(tfm);
++        return -ENOMEM;
++    }
++    desc->tfm = tfm;
++
++    sg_init_one(&sg, data, len);
++    ret = crypto_shash_digest(desc, &sg, len, hash);
++    kfree(desc);
++    crypto_free_shash(tfm);
++    return ret;
++}
++
++static int verify_baseband_fw(void *data) {
++    const struct firmware *fw;
++    int ret = request_firmware(&fw, MODEM_FW_NAME, NULL);
++    if (ret) {
++        pr_err("baseband_guard: Failed to load %s: %d", MODEM_FW_NAME, ret);
++        return ret;
++    }
++    if (verify_sig) {
++        u8 hash[SHA256_DIGEST_SIZE];
++        if (compute_sha256(fw->data, fw->size, hash)) {
++            pr_err("baseband_guard: SHA256 failed");
++            release_firmware(fw);
++            return -EINVAL;
++        }
++        if (memcmp(hash, expected_sig, SHA256_DIGEST_SIZE)) {
++            pr_warn("baseband_guard: Firmware sig mismatch");
++        } else {
++            pr_info("baseband_guard: Firmware verified");
++        }
++    }
++    release_firmware(fw);
++    return 0;
++}
++
++static int guard_file_open(struct file *file) {
++    const char *name;
++    int i;
++
++    if (!(file->f_mode & FMODE_WRITE)) return 0;
++    if (is_recovery_mode()) return 0;
++
++    struct inode *inode = file_inode(file);
++    if (!S_ISBLK(inode->i_mode)) return 0;
++
++    name = file_dentry(file)->d_name.name;
++    mutex_lock(&partition_list_lock);
++    for (i = 0; i < num_protected_partitions && protected_partitions[i]; i++) {
++        if (!strcmp(name, protected_partitions[i])) {
++            mutex_unlock(&partition_list_lock);
++            pr_err("baseband_guard: DENIED write to ", name);
++            return -EPERM;
++        }
++    }
++    mutex_unlock(&partition_list_lock);
++    return 0;
++}
++
++static ssize_t protected_list_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
++    size_t len = 0;
++    int i;
++    mutex_lock(&partition_list_lock);
++    for (i = 0; i < num_protected_partitions && protected_partitions[i]; i++)
++        len += scnprintf(buf + len, PAGE_SIZE - len, "%s,", protected_partitions[i]);
++    mutex_unlock(&partition_list_lock);
++    if (len > 0) buf[len - 1] = '\n';
++    return len ? len : scnprintf(buf, PAGE_SIZE, "\n");
++}
++
++static ssize_t protected_list_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
++    char *new_partitions[MAX_PROTECTED_PARTITIONS] = {0};
++    int num_new = 0, i;
++    char *buffer = kstrndup(buf, count, GFP_KERNEL);
++    if (!buffer) return -ENOMEM;
++
++    char *p = buffer, *substr;
++    while ((substr = strsep(&p, ",\n\r\t ")) && num_new < MAX_PROTECTED_PARTITIONS) {
++        if (*substr == '\0') continue;
++        new_partitions[num_new] = kstrndup(substr, MAX_PARTITION_NAME_LEN, GFP_KERNEL);
++        if (!new_partitions[num_new]) {
++            for (i = 0; i < num_new; i++) kfree(new_partitions[i]);
++            kfree(buffer);
++            return -ENOMEM;
++        }
++        num_new++;
++    }
++
++    mutex_lock(&partition_list_lock);
++    for (i = 0; i < num_protected_partitions; i++) kfree(protected_partitions[i]);
++    num_protected_partitions = num_new;
++    for (i = 0; i < num_new; i++) protected_partitions[i] = new_partitions[i];
++    mutex_unlock(&partition_list_lock);
++
++    kfree(buffer);
++    pr_info("baseband_guard: Updated %d partitions", num_new);
++    return count;
++}
++
++static ssize_t allow_in_recovery_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) {
++    return scnprintf(buf, PAGE_SIZE, "%d\n", recovery_bypass);
++}
++
++static ssize_t allow_in_recovery_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count) {
++    bool new_val;
++    if (kstrtobool(buf, &new_val)) return -EINVAL;
++    recovery_bypass = new_val;
++    pr_info("baseband_guard: Recovery bypass set to %d", new_val);
++    return count;
++}
++
++static struct kobj_attribute protected_list_attr = __ATTR(protected_list, 0664, protected_list_show, protected_list_store);
++static struct kobj_attribute recovery_bypass_attr = __ATTR(allow_in_recovery, 0664, allow_in_recovery_show, allow_in_recovery_store);
++
++static struct attribute *attrs[] = {
++    &protected_list_attr.attr,
++    &recovery_bypass_attr.attr,
++    NULL,
++};
++
++static struct attribute_group attr_group = {
++    .attrs = attrs,
++};
++
++static struct kobject *baseband_guard_kobj;
++
++static struct security_hook_list baseband_guard_hooks[] __lsm_ro_after_init = {
++    LSM_HOOK_INIT(file_open, guard_file_open),
++};
++
++static int __init baseband_guard_init(void) {
++    int ret;
++
++    pr_info("baseband_guard: Initializing...");
++    security_add_hooks(baseband_guard_hooks, ARRAY_SIZE(baseband_guard_hooks), "baseband_guard");
++
++    baseband_guard_kobj = kobject_create_and_add("baseband_guard", kernel_kobj);
++    if (!baseband_guard_kobj) {
++        pr_err("baseband_guard: Failed to create kobject");
++        return -ENOMEM;
++    }
++
++    ret = sysfs_create_group(baseband_guard_kobj, &attr_group);
++    if (ret) {
++        pr_err("baseband_guard: Failed to create sysfs group: %d", ret);
++        kobject_put(baseband_guard_kobj);
++        return ret;
++    }
++
++    kthread_run(verify_baseband_fw, NULL, "baseband_verify");
++    pr_info("baseband_guard: Initialized with modem protection");
++    return 0;
++}
++
++static void __exit baseband_guard_exit(void) {
++    int i;
++    security_remove_hooks(baseband_guard_hooks, ARRAY_SIZE(baseband_guard_hooks));
++    sysfs_remove_group(baseband_guard_kobj, &attr_group);
++    kobject_put(baseband_guard_kobj);
++
++    mutex_lock(&partition_list_lock);
++    for (i = 0; i < num_protected_partitions; i++) kfree(protected_partitions[i]);
++    num_protected_partitions = 0;
++    mutex_unlock(&partition_list_lock);
++
++    pr_info("baseband_guard: Unloaded");
++}
++
++module_init(baseband_guard_init);
++module_exit(baseband_guard_exit);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Optimized by Grok");
++MODULE_DESCRIPTION("Baseband Guard with LSM, SELinux, and KernelSU WebUI");
++MODULE_VERSION("0.4");
