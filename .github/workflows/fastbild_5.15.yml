@@ -307,20 +307,11 @@ jobs:
       - name: 写入内核配置
         run: |
           cd kernel_workspace/kernel_platform
-          # Hooks基础配置 #
           echo "CONFIG_KSU=y" >> ./common/arch/arm64/configs/gki_defconfig
-
-          # KPM基础配置 #
-          if [[ "${{ github.event.inputs.KPM }}" == "true" ]]; then
-            echo "CONFIG_KPM=y" >> ./common/arch/arm64/configs/gki_defconfig
-          fi
-
-          # VFS基础配置 #
+          echo "CONFIG_KPM=n" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_LSM_SECURITY_HOOKS=n" >> ./common/arch/arm64/configs/gki_defconfig
-          
-          # SUSFS基础配置 #
           echo "CONFIG_KSU_SUSFS=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./common/arch/arm64/configs/gki_defconfig
           echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./common/arch/arm64/configs/gki_defconfig
@@ -409,7 +400,7 @@ jobs:
       
       - name: 制作AnyKernel3内核刷机包
         run: |
-          git clone --depth=1 https://github.com/Kernel-SU/AnyKernel3 AnyKernel3-no_kpm
+          git clone --depth=1 https://github.com/xx2901318208/AnyKernel3 AnyKernel3-no_kpm
           cp -a AnyKernel3-no_kpm AnyKernel3-kpm
           rm -rf AnyKernel3-{no_kpm,kpm}/.git
           
