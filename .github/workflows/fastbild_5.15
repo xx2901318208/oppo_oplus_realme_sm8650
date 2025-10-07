@@ -1,4 +1,4 @@
-name: Build SukiSU Ultra
+name: 加速版构建 5.15 欧加真OKI内核
 on:
   workflow_dispatch:
     inputs:
