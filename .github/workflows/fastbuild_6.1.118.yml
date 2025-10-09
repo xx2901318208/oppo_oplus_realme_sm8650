@@ -368,35 +368,6 @@ jobs:
           echo "CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y" >> ./common/arch/arm64/configs/gki_defconfig
           #禁用 defconfig 检查
           sed -i 's/check_defconfig//' ./common/build.config.gki 
-          cd kernel_workspace
-          # 1. 启用核心的命名空间和控制组支持 (这是Docker的基石)
-          echo "CONFIG_NAMESPACES=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CGROUPS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 2. 启用各种具体的控制组子系统
-          echo "CONFIG_CGROUP_CPUACCT=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CGROUP_DEVICE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CGROUP_FREEZER=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CGROUP_SCHED=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_CPUSETS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_MEMCG=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 3. 启用关键的网络命名空间和网络设备支持
-          echo "CONFIG_NET_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_VETH=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_MACVLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 4. 启用 OverlayFS 支持 (用于Docker镜像层)
-          echo "CONFIG_OVERLAY_FS=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 5. 启用其他必要的内核功能
-          echo "CONFIG_POSIX_MQUEUE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_UEVENT_HELPER=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_FHANDLE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_EXT4_FS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_EXT4_FS_SECURITY=y" >> ./common/arch/arm64/configs/gki_defconfig
-          # 6. 启用 Netfilter 框架 (用于容器网络)
-          echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_NETFILTER_XT_MATCH_CONNTRACK=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP_NF_FILTER=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_IP_NF_TARGET_MASQUERADE=y" >> ./common/arch/arm64/configs/gki_defconfig
-          echo "CONFIG_NF_NAT=y" >> ./common/arch/arm64/configs/gki_defconfig
       - name: 启用网络功能增强优化配置
         run: |
           cd kernel_workspace
@@ -495,6 +466,34 @@ jobs:
             sed -i 's/CONFIG_CRYPTO_POLYVAL_ARM64_CE=.*/CONFIG_CRYPTO_POLYVAL_ARM64_CE=y/' ./common/arch/arm64/configs/gki_defconfig
             sed -i 's/CONFIG_CRYPTO_AES_ARM64_CE_BLK=.*/CONFIG_CRYPTO_AES_ARM64_CE_BLK=y/' ./common/arch/arm64/configs/gki_defconfig
             sed -i 's/CONFIG_CRYPTO_CHACHA20POLY1305=.*/CONFIG_CRYPTO_CHACHA20POLY1305=y/' ./common/arch/arm64/configs/gki_defconfig
+            # 1. 启用核心的命名空间和控制组支持 (这是Docker的基石)
+            echo "CONFIG_NAMESPACES=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CGROUPS=y" >> ./common/arch/arm64/configs/gki_defconfig
+            # 2. 启用各种具体的控制组子系统
+            echo "CONFIG_CGROUP_CPUACCT=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CGROUP_DEVICE=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CGROUP_FREEZER=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CGROUP_SCHED=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_CPUSETS=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_MEMCG=y" >> ./common/arch/arm64/configs/gki_defconfig
+            # 3. 启用关键的网络命名空间和网络设备支持
+            echo "CONFIG_NET_NS=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_VETH=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_MACVLAN=y" >> ./common/arch/arm64/configs/gki_defconfig
+            # 4. 启用 OverlayFS 支持 (用于Docker镜像层)
+            echo "CONFIG_OVERLAY_FS=y" >> ./common/arch/arm64/configs/gki_defconfig
+            # 5. 启用其他必要的内核功能
+            echo "CONFIG_POSIX_MQUEUE=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_UEVENT_HELPER=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_FHANDLE=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_EXT4_FS_POSIX_ACL=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_EXT4_FS_SECURITY=y" >> ./common/arch/arm64/configs/gki_defconfig
+            # 6. 启用 Netfilter 框架 (用于容器网络)
+            echo "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NETFILTER_XT_MATCH_CONNTRACK=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP_NF_FILTER=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_IP_NF_TARGET_MASQUERADE=y" >> ./common/arch/arm64/configs/gki_defconfig
+            echo "CONFIG_NF_NAT=y" >> ./common/arch/arm64/configs/gki_defconfig
           fi
           cd common
           wget https://github.com/cctv18/oppo_oplus_realme_sm8650/raw/refs/heads/main/other_patch/config.patch
